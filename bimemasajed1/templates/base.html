@@ -1,0 +1,57 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}سامانه مدیریت مساجد{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="bg-gray-100 flex min-h-screen">
+
+  <!-- سایدبار ثابت -->
+  <aside class="w-64 bg-white shadow-lg border-l border-gray-200 p-6 flex flex-col justify-between fixed h-full right-0">
+    
+    <div>
+      <h1 class="text-2xl font-bold mb-8 text-center border-b border-indigo-500 pb-3">
+        سامانه مساجد
+      </h1>
+
+      <nav class="space-y-3">
+        <a href="/" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if request.path == '/' %}bg-indigo-600 text-white{% endif %}">
+          🏠 داشبورد
+        </a>
+        <a href="{% url 'mainform' %}" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/mainform/' in request.path %}bg-indigo-600 text-white{% endif %}">
+          🕌 اطلاعات مسجد
+        </a>
+        <a href="{% url 'personform' %}" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/personform/' in request.path %}bg-indigo-600 text-white{% endif %}">
+          👥 اطلاعات خادمین
+        </a>
+        <a href="{% url 'buildform' %}" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/buldform/' in request.path %}bg-indigo-600 text-white{% endif %}">
+          🏢 اطلاعات ساختمان
+        </a>
+        <a href="{% url 'boardform' %}" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/boardform/' in request.path %}bg-indigo-600 text-white{% endif %}">
+          📝 اطلاعات هیات امنا
+        </a>
+
+        <!-- درباره ما دقیقا بالای شماره -->
+        <a href="/about/" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/about/' in request.path %}bg-indigo-600 text-white{% endif %}">
+          ℹ️ درباره ما
+        </a>
+      </nav>
+    </div>
+
+    <!-- شماره تلفن پایین سایدبار -->
+    <div class="text-center text-gray-500 text-sm mt-8">
+      📞 0933803333333
+    </div>
+  </aside>
+
+  <!-- محتوای اصلی -->
+  <main class="flex-1 p-8 mr-64">
+    {% block content %}{% endblock %}
+  </main>
+
+</body>
+</html>

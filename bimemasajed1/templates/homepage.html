@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}پنل کاربری{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-3xl bg-white rounded-2xl shadow-lg p-8 mx-auto mt-12">
+    <h2 class="text-2xl font-bold text-center text-indigo-700 mb-6">داشبورد کاربری</h2>
+
+    <!-- پیام‌ها -->
+    {% if messages %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="p-3 rounded text-center 
+                    {% if message.tags == 'error' %}
+                        bg-red-100 text-red-700
+                    {% elif message.tags == 'success' %}
+                        bg-green-100 text-green-700
+                    {% else %}
+                        bg-gray-100 text-gray-700
+                    {% endif %}
+                ">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- اطلاعات کاربر -->
+    <div class="bg-slate-50 p-5 rounded-xl border border-slate-200 mb-6">
+        <h3 class="text-lg font-semibold text-gray-700 mb-3">اطلاعات ثبت‌شده</h3>
+
+        {% if mosque %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="space-y-3">
+                    <p><span class="font-medium text-gray-600">نام کاربری:</span> {{ request.session.username }}</p>
+                    <p><span class="font-medium text-gray-600">نام مسجد:</span> {{ mosque.mosque_name }}</p>
+                    <p><span class="font-medium text-gray-600">ظرفیت مسجد:</span> {{ mosque.mosque_Capacity }} نفر</p>
+                </div>
+                <div class="space-y-3">
+                    <p><span class="font-medium text-gray-600">تلفن همراه:</span> {{ mosque.created_phone }}</p>
+                    <p><span class="font-medium text-gray-600">کد شناسایی مسجد:</span> {{ mosque.mosque_id }}</p>
+                    <p><span class="font-medium text-gray-600">تاریخ ثبت:</span> {{ mosque.create_date|date:"Y/m/d H:i" }}</p>
+                </div>
+            </div>
+        {% else %}
+            <p class="text-gray-500 text-center py-4">تا کنون اطلاعاتی ثبت نشده است.</p>
+        {% endif %}
+    </div>
+
+    <!-- دکمه‌ها -->
+    <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+        {% if mosque %}
+            <a href="{% url 'mainform' %}" class="w-full sm:flex-1 bg-green-600 text-white text-center py-3 rounded-lg hover:bg-green-700 transition-all font-medium">
+                نمایش و ویرایش اطلاعات
+            </a>
+        {% else %}
+            <a href="{% url 'mainform' %}" class="w-full sm:flex-1 bg-indigo-600 text-white text-center py-3 rounded-lg hover:bg-indigo-700 transition-all font-medium">
+                درج اطلاعات مسجد
+            </a>
+        {% endif %}
+
+        <a href="{% url 'logout' %}" class="w-full sm:flex-1 bg-red-500 text-white text-center py-3 rounded-lg hover:bg-red-600 transition-all font-medium">
+            خروج از حساب
+        </a>
+    </div>
+</div>
+{% endblock %}
+
