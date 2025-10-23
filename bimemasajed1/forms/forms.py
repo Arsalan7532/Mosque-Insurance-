@@ -1,20 +1,22 @@
 from django import forms
+from django.contrib import messages
 from .models import Signup , MainRegistration,PersonInfo,BuildingInformation, TrusteesBoard,question
 class StyledModelForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        username = kwargs.pop('username', None)
-        super().__init__(*args, **kwargs)
-
-        # استایل عمومی برای همهٔ فیلدها
+        #send to father
+        self.username=kwargs.pop('username',None)
+        super().__init__(*args,**kwargs)
+        #show username for user
+        if self.username and 'registration' in self.fields:
+            self.fields['registration'].queryset = Signup.objects.filter(username=self.username)
+        else: 
+            return messages.error("لطفا ام کاربری خود را تکمیل کنید")
+        #Stylefield
         for field in self.fields.values():
             field.widget.attrs.update({
                 'class': 'w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none',
                 'placeholder': field.label
             })
-
-        # محدودسازی فیلد registration به کاربر فعلی
-        if username and 'registration' in self.fields:
-            self.fields['registration'].queryset = Signup.objects.filter(username=username)
             
 class SignupForm(forms.ModelForm):
     class Meta:
@@ -48,21 +50,6 @@ class MainRegistration_form(StyledModelForm):
             'mosque_postalcode': 'کد ۱۰ رقمی وارد کنید.',
             'created_phone': 'شماره موبایل ۱۱ رقمی.',
         }
-    def __init__(self, *args, **kwargs):
-        # گرفتن username از view (در صورت وجود)
-        username = kwargs.pop('username', None)
-        super().__init__(*args, **kwargs)
-
-        # ظاهر کلی فیلدها (قبلاً StyledModelForm این رو انجام میداد، اینجا هم می‌تونه اضافه بشه)
-        for field in self.fields.values():
-            field.widget.attrs.update({
-                'class': 'w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-400 focus:outline-none',
-                'placeholder': field.label
-            })
-
-        # اگر username داده شده و فیلد registration هست، queryset را محدود کن
-        if username and 'registration' in self.fields:
-            self.fields['registration'].queryset = Signup.objects.filter(username=username)
 class PersonInfo_form(forms.ModelForm):
     class Meta:
         model=PersonInfo
@@ -104,4 +91,5 @@ class question_form(forms.ModelForm):
                 'dakhelRahn':"بنا داخل رهن؟",
                 'dakhelVagozar':"بنا داخل واگذاری؟",
                 'kharejMalek':"مالک بنای خارجی؟",
+
         }
