@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib import messages
-from .forms import SignupForm,LoginForm,MainRegistration_form
+from .forms import SignupForm,LoginForm,MainRegistration_form,PersonInfo_form
 from .models import Signup
 from django.contrib.auth.hashers import check_password,make_password
 from bimemasajed1.decorators import custom_login_required
@@ -53,37 +53,57 @@ def logout(request):
         return redirect('login')
     else:
         messages.info(request,'شما قبلا خارج شدید')
-@custom_login_required
-def MainRegistration(request):
-    username = request.session.get('username')  # گرفتن یوزرنیم از سشن
-
-    signup = None
-    if username:
+def get_signup_from_session(request): #get username
+    user=request.session.get('username')
+    if user:
         try:
-            signup = Signup.objects.get(username=username)
+            signup=Signup.objects.filter(username=user).first()
         except Signup.DoesNotExist:
-            signup = None
-
+            messages.warning(request,"کاربری شما یافت نشد، لطفا دوباره وارد شوید")
+            return None
+    else:
+        messages.warning(request,"ابتدا وارد شوید!")
+        return None
+    return signup
+def save_data(request,getsignup,getform):#save username &form
+    if getform.is_valid():
+        data=getform.save(commit=False)
+        data.registration=getsignup
+        data.save()         #not ManyToMany !!!!!!!!!! we dont have try/except
+        messages.success(request, "اطلاعات با موفقیت ثبت شد ✅")
+        return True 
+    else:
+        messages.error(request, "اطلاعات را صحیح وارد نمایید ❌")
+        return False
+def MainRegistration(request):
+    signup= get_signup_from_session(request)
+    if not signup: #you can use decorator
+        return redirect('login') 
     if request.method == 'POST':
-        form = MainRegistration_form(request.POST, username=username)
-        if form.is_valid():
-            mosque = form.save(commit=False)
-            mosque.registration = signup
-            mosque.save()
-            messages.success(request, "اطلاعات مسجد با موفقیت ثبت شد ✅")
+        form = MainRegistration_form(request.POST, username=signup.username)
+        if save_data(request,signup,form):
             return redirect("/")
         else:
-            messages.error(request, "اطلاعات را صحیح وارد نمایید ❌")
+            pass
     else:
-        initial = {}
-        if signup:
-            initial['registration'] = signup.pk
-        form = MainRegistration_form(username=username, initial=initial)
-
+        form = MainRegistration_form(username=signup.username)
     return render(request, "mainform.html", {"form": form, "signup": signup})
+@custom_login_required
 def PersonInfo(request):
-    return redirect ('home')
+    signup=get_signup_from_session(request)
+    if request.method == "POST":
+        form=PersonInfo_form(request.POST)
+        if save_data(request,signup,form):
+            return redirect("/")
+        else:
+            pass
+    else:
+        form=PersonInfo_form()
+    return render(request,"personform.html",{"form":form,"signup":signup})
+@custom_login_required
 def BuildingInformation(request):
     return redirect ('home')
+
+@custom_login_required
 def TrusteesBoard(request):
     return redirect ('home')

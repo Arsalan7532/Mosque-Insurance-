@@ -9,8 +9,6 @@ class StyledModelForm(forms.ModelForm):
         #show username for user
         if self.username and 'registration' in self.fields:
             self.fields['registration'].queryset = Signup.objects.filter(username=self.username)
-        else: 
-            return messages.error("لطفا ام کاربری خود را تکمیل کنید")
         #Stylefield
         for field in self.fields.values():
             field.widget.attrs.update({
@@ -50,7 +48,7 @@ class MainRegistration_form(StyledModelForm):
             'mosque_postalcode': 'کد ۱۰ رقمی وارد کنید.',
             'created_phone': 'شماره موبایل ۱۱ رقمی.',
         }
-class PersonInfo_form(forms.ModelForm):
+class PersonInfo_form(StyledModelForm):
     class Meta:
         model=PersonInfo
         fields=['servan_number','fullname_servan','person_role']
