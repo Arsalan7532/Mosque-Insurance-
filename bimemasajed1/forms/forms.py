@@ -56,7 +56,7 @@ class PersonInfo_form(StyledModelForm):
                 'fullname_servan':"نام و نام خانوادگی خادم",
                 'person_role':"نقش خادم",
                 }
-class BuildingInformation_form(forms.ModelForm):
+class BuildingInformation_form(StyledModelForm):
     class Meta:
         model=BuildingInformation
         fields=['total_land_area','total_bulding_area','user_type','structure_type','structure_age','structure_meterage']
@@ -67,7 +67,7 @@ class BuildingInformation_form(forms.ModelForm):
                 'structure_age':"قدمت سازه",
                 'structure_meterage':"متراژ",
                 }
-class TrusteesBoard_form(forms.ModelForm):
+class TrusteesBoard_form(StyledModelForm):
     class Meta:
         model=TrusteesBoard
         fields=['number_TrusteesBoard','boss_fullname','boss_nationalcode','boss_phone','boss_birthday','secretary_fullname','secretary_nationalcode','secretary_phone','secretary_birthday']

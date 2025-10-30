@@ -1,6 +1,6 @@
 from django.shortcuts import render,redirect
 from django.contrib import messages
-from .forms import SignupForm,LoginForm,MainRegistration_form,PersonInfo_form
+from .forms import SignupForm,LoginForm,MainRegistration_form,PersonInfo_form,BuildingInformation_form,TrusteesBoard_form
 from .models import Signup
 from django.contrib.auth.hashers import check_password,make_password
 from bimemasajed1.decorators import custom_login_required
@@ -102,8 +102,26 @@ def PersonInfo(request):
     return render(request,"personform.html",{"form":form,"signup":signup})
 @custom_login_required
 def BuildingInformation(request):
-    return redirect ('home')
+    signup=get_signup_from_session(request)
+    if request.method == 'POST':
+        form=BuildingInformation_form(request.POST)
+        if save_data(request,signup,form):
+            return redirect('/')
+        else:
+            pass
+    else:
+        form=BuildingInformation_form()
+    return render(request,'buildingform.html',{'form':form,'signup':signup})
 
 @custom_login_required
 def TrusteesBoard(request):
-    return redirect ('home')
+    signup=get_signup_from_session(request)
+    if request.method =='POST':
+        form= TrusteesBoard_form(request.POST)
+        if save_data(request,signup,form):
+            return redirect("/")
+        else:
+            pass
+    else:
+        form=TrusteesBoard_form()
+    return render (request,'boardform.html',{'form':form,'signup':signup})
