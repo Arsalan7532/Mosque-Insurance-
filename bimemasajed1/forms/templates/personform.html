@@ -23,43 +23,39 @@
       {% endfor %}
     {% endif %}
 
+    <!-- 🔹 نمایش کاربر ثبت‌کننده -->
+    {% if signup %}
+      <div class="bg-indigo-50 p-3 rounded-md text-gray-700 border border-indigo-200 mb-4">
+        <strong>کاربر ثبت‌کننده:</strong>
+        <span class="text-indigo-700 font-semibold mr-2">{{ signup.username }}</span>
+      </div>
+    {% endif %}
+
     <form method="post" class="space-y-5">
       {% csrf_token %}
 
-      <!-- 🔹 نمایش کاربر ثبت‌کننده -->
-      {% if signup %}
-        <div class="bg-indigo-50 p-3 rounded-md text-gray-700 border border-indigo-200 mb-4">
-          <strong>کاربر ثبت‌کننده:</strong>
-          <span class="text-indigo-700 font-semibold mr-2">{{ signup.username }}</span>
-        </div>
-      {% else %}
-        <div class="bg-yellow-50 p-3 rounded-md text-gray-700 border border-yellow-200 mb-4">
-          <strong>هشدار:</strong> کاربر ثبت‌کننده پیدا نشد. ابتدا در سیستم ثبت‌نام کنید.
-        </div>
-      {% endif %}
-
-      <!-- 🔹 بقیه فیلدها -->
-      {% for field in form %}
-        {% if field.name == "registration" %}
-          {{ field.as_hidden }}
-        {% else %}
-          <div>
-            <label class="block text-gray-700 mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}
-              <p class="text-red-500 text-sm mt-1">{{ field.errors.0 }}</p>
-            {% endif %}
-          </div>
-        {% endif %}
-      {% endfor %}
-
-      <div class="pt-4">
-        <button type="submit" class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-all">
-          ثبت اطلاعات
-        </button>
-      </div>
-    </form>
+{% for field in form %}
+  <div>
+    <label class="block text-gray-700 mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}
+      <p class="text-red-500 text-sm mt-1">{{ field.errors.0 }}</p>
+    {% endif %}
   </div>
+{% endfor %}
+
+<div class="pt-4 flex justify-between items-center">
+  {% if not editing %}
+    <a href="?edit=true" class="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all">
+      درخواست ویرایش اطلاعات
+    </a>
+  {% endif %}
+  <button type="submit" class="w-full {% if not editing %}hidden{% endif %} bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-all">
+    ثبت اطلاعات
+  </button>
+    </div>
+  </form>
+</div>
 
 </body>
 {% endblock %}
