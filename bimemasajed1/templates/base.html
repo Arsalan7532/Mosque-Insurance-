@@ -2,17 +2,17 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}سامانه مدیریت مساجد{% endblock %}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}سامانه مدیریت مساجد{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
 <body class="bg-gray-100 flex min-h-screen">
 
-  <!-- سایدبار ثابت -->
+  <!-- سایدبار -->
   <aside class="w-64 bg-white shadow-lg border-l border-gray-200 p-6 flex flex-col justify-between fixed h-full right-0">
-    
+
     <div>
       <h1 class="text-2xl font-bold mb-8 text-center border-b border-indigo-500 pb-3">
         سامانه مساجد
@@ -22,27 +22,40 @@
         <a href="/" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if request.path == '/' %}bg-indigo-600 text-white{% endif %}">
           🏠 داشبورد
         </a>
-        <a href="{% url 'mainform' %}" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/mainform/' in request.path %}bg-indigo-600 text-white{% endif %}">
-          🕌 اطلاعات مسجد
-        </a>
-        <a href="{% url 'personform' %}" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/personform/' in request.path %}bg-indigo-600 text-white{% endif %}">
-          👥 اطلاعات خادمین
-        </a>
-        <a href="{% url 'buildform' %}" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/buildform/' in request.path %}bg-indigo-600 text-white{% endif %}">
-          🏢 اطلاعات ساختمان
-        </a>
-        <a href="{% url 'boardform' %}" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/boardform/' in request.path %}bg-indigo-600 text-white{% endif %}">
-          📝 اطلاعات هیات امنا
-        </a>
 
-        <!-- درباره ما دقیقا بالای شماره -->
+        <!-- آکاردئون تکمیل اطلاعات -->
+        <details open class="mb-3">
+          <summary class="cursor-pointer py-2.5 px-4 rounded-lg bg-indigo-100 hover:bg-indigo-200 font-semibold flex items-center justify-between">
+            <span>📋 تکمیل اطلاعات</span>
+            <span class="text-indigo-600 text-lg">▾</span>
+          </summary>
+
+          <div class="pl-4 space-y-1 mt-2">
+            <a href="{% url 'mainform' %}" 
+               class="block py-2 px-5 rounded hover:bg-indigo-600 hover:text-white transition {% if '/mainform/' in request.path %}bg-indigo-600 text-white{% endif %}">
+              🕌 اطلاعات مسجد
+            </a>
+            <a href="{% url 'personform' %}" 
+               class="block py-2 px-5 rounded hover:bg-indigo-600 hover:text-white transition {% if '/personform/' in request.path %}bg-indigo-600 text-white{% endif %}">
+              👥 اطلاعات خادمین
+            </a>
+            <a href="{% url 'buildform' %}" 
+               class="block py-2 px-5 rounded hover:bg-indigo-600 hover:text-white transition {% if '/buildform/' in request.path %}bg-indigo-600 text-white{% endif %}">
+              🏢 اطلاعات ساختمان
+            </a>
+            <a href="{% url 'boardform' %}" 
+               class="block py-2 px-5 rounded hover:bg-indigo-600 hover:text-white transition {% if '/boardform/' in request.path %}bg-indigo-600 text-white{% endif %}">
+              📝 اطلاعات هیات امنا
+            </a>
+          </div>
+        </details>
+
         <a href="/about/" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/about/' in request.path %}bg-indigo-600 text-white{% endif %}">
           ℹ️ درباره ما
         </a>
       </nav>
     </div>
 
-    <!-- شماره تلفن پایین سایدبار -->
     <div class="text-center text-gray-500 text-sm mt-8">
       📞 0933803333333
     </div>
