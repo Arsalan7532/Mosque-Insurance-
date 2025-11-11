@@ -1,7 +1,7 @@
 from django.shortcuts import render,redirect
 from django.contrib import messages
 from .forms import SignupForm,LoginForm,MainRegistration_form,PersonInfo_form,BuildingInformation_form,TrusteesBoard_form
-from .models import Signup
+from .models import Signup,TrusteesBoard,MainRegistration,PersonInfo,BuildingInformation
 from django.contrib.auth.hashers import check_password,make_password
 from bimemasajed1.decorators import custom_login_required
 def signin(request):
@@ -75,53 +75,141 @@ def save_data(request,getsignup,getform):#save username &form
     else:
         messages.error(request, "اطلاعات را صحیح وارد نمایید ❌")
         return False
-def MainRegistration(request):
-    signup= get_signup_from_session(request)
-    if not signup: #you can use decorator
-        return redirect('login') 
+def MainRegistration_view(request):
+    # گرفتن signup از session
+    signup = get_signup_from_session(request)
+    if not signup:
+        return redirect('login')  # یا مسیر مناسب
+
+    # پیدا کردن MainRegistration مرتبط با این signup (ممکنه None باشه)
+    main_reg = MainRegistration.objects.filter(registration=signup).first()
+
+    # آیا کاربر در حالت ویرایش است؟ (با ?edit=true در URL)
+    editing = request.GET.get("edit") == "true"
+
     if request.method == 'POST':
-        form = MainRegistration_form(request.POST, username=signup.username)
-        if save_data(request,signup,form):
-            return redirect("/")
+        # هنگام POST، اگر رکورد موجود است از همان برای instance استفاده کن
+        form = MainRegistration_form(request.POST, instance=main_reg)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            # اگر رکورد جدید است یا registration تنظیم نشده، حتما registration را ست کن
+            obj.registration = signup
+            obj.save()
+            messages.success(request, "اطلاعات مسجد با موفقیت ذخیره شد ✅")
+            return redirect('/')  # یا مسیر دلخواه بعد از ذخیره
         else:
-            pass
+            messages.error(request, "فرم معتبر نیست، لطفا مقادیر را بررسی کنید.")
     else:
-        form = MainRegistration_form(username=signup.username)
-    return render(request, "mainform.html", {"form": form, "signup": signup})
+        # GET: نمایش فرم با instance (اگر رکورد هست) یا فرم خالی
+        form = MainRegistration_form(instance=main_reg)
+        # اگر رکورد وجود داره و کاربر در حالت ویرایش نیست → فیلدها را غیرفعال کن
+        if main_reg and not editing:
+            for field in form.fields.values():
+                field.widget.attrs['disabled'] = 'disabled'
+
+    return render(request, 'mainform.html', {
+        'form': form,
+        'signup': signup,
+        'editing': editing,
+        'main_reg': main_reg,
+    })
 @custom_login_required
-def PersonInfo(request):
-    signup=get_signup_from_session(request)
-    if request.method == "POST":
-        form=PersonInfo_form(request.POST)
-        if save_data(request,signup,form):
-            return redirect("/")
-        else:
-            pass
-    else:
-        form=PersonInfo_form()
-    return render(request,"personform.html",{"form":form,"signup":signup})
-@custom_login_required
-def BuildingInformation(request):
-    signup=get_signup_from_session(request)
+def PersonInfo_view(request):
+    signup = get_signup_from_session(request)
+    # پیدا کردن مسجدی که این کاربر ثبت کرده
+    main_reg = MainRegistration.objects.filter(registration=signup).first()
+
+    if not main_reg:
+        messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
+        return redirect('/account/mainform/')  # مسیر فرم مسجد
+
+    editing = request.GET.get("edit") == "true"
+
     if request.method == 'POST':
-        form=BuildingInformation_form(request.POST)
-        if save_data(request,signup,form):
+        data = PersonInfo.objects.filter(registration=main_reg).first()
+        form = PersonInfo_form(request.POST, instance=data)
+        if form.is_valid():
+            trustees = form.save(commit=False)
+            trustees.registration = main_reg
+            trustees.save()
+            messages.success(request, "اطلاعات هیات امنا ذخیره شد ✅")
             return redirect('/')
-        else:
-            pass
     else:
-        form=BuildingInformation_form()
-    return render(request,'buildingform.html',{'form':form,'signup':signup})
+        data = PersonInfo.objects.filter(registration=main_reg).first()
+        form = PersonInfo_form(instance=data)
+        if not editing:
+            for field in form.fields.values():
+                field.widget.attrs['disabled'] = 'disabled'
+
+    return render(request, 'personform.html', {
+        'form': form,
+        'signup': signup,
+        'editing': editing
+    })
+@custom_login_required
+def BuildingInformation_view(request):
+    signup = get_signup_from_session(request)
+    # پیدا کردن مسجدی که این کاربر ثبت کرده
+    main_reg = MainRegistration.objects.filter(registration=signup).first()
+
+    if not main_reg:
+        messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
+        return redirect('/account/mainform/')  # مسیر فرم مسجد
+
+    editing = request.GET.get("edit") == "true"
+
+    if request.method == 'POST':
+        data = BuildingInformation.objects.filter(registration=main_reg).first()
+        form = BuildingInformation_form(request.POST, instance=data)
+        if form.is_valid():
+            trustees = form.save(commit=False)
+            trustees.registration = main_reg
+            trustees.save()
+            messages.success(request, "اطلاعات هیات امنا ذخیره شد ✅")
+            return redirect('/')
+    else:
+        data = BuildingInformation.objects.filter(registration=main_reg).first()
+        form = BuildingInformation_form(instance=data)
+        if not editing:
+            for field in form.fields.values():
+                field.widget.attrs['disabled'] = 'disabled'
+
+    return render(request, 'buildingform.html', {
+        'form': form,
+        'signup': signup,
+        'editing': editing
+    })
 
 @custom_login_required
-def TrusteesBoard(request):
-    signup=get_signup_from_session(request)
-    if request.method =='POST':
-        form= TrusteesBoard_form(request.POST)
-        if save_data(request,signup,form):
-            return redirect("/")
-        else:
-            pass
+def trusteesboard_view(request):
+    signup = get_signup_from_session(request)
+    # پیدا کردن مسجدی که این کاربر ثبت کرده
+    main_reg = MainRegistration.objects.filter(registration=signup).first()
+
+    if not main_reg:
+        messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
+        return redirect('/account/mainform/')  # مسیر فرم مسجد
+
+    editing = request.GET.get("edit") == "true"
+
+    if request.method == 'POST':
+        data = TrusteesBoard.objects.filter(registration=main_reg).first()
+        form = TrusteesBoard_form(request.POST, instance=data)
+        if form.is_valid():
+            trustees = form.save(commit=False)
+            trustees.registration = main_reg
+            trustees.save()
+            messages.success(request, "اطلاعات هیات امنا ذخیره شد ✅")
+            return redirect('/')
     else:
-        form=TrusteesBoard_form()
-    return render (request,'boardform.html',{'form':form,'signup':signup})
+        data = TrusteesBoard.objects.filter(registration=main_reg).first()
+        form = TrusteesBoard_form(instance=data)
+        if not editing:
+            for field in form.fields.values():
+                field.widget.attrs['disabled'] = 'disabled'
+
+    return render(request, 'boardform.html', {
+        'form': form,
+        'signup': signup,
+        'editing': editing
+    })
