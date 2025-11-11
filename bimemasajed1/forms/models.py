@@ -32,7 +32,7 @@ class PersonInfo(models.Model):
     class Meta:
         verbose_name="لیست خادمین"
 class BuildingInformation(models.Model):
-    registration=models.ForeignKey(MainRegistration,on_delete=models.CASCADE,related_name="structures",verbose_name="بنا")
+    registration=models.ForeignKey(MainRegistration,on_delete=models.CASCADE,related_name="building",verbose_name="بنا")
     total_land_area=models.IntegerField(validators=[MinValueValidator(50),MaxValueValidator(10000)],verbose_name="متراژ کل زمین")
     total_bulding_area=models.IntegerField(validators=[MinValueValidator(50),MaxValueValidator(10000)],verbose_name="متراژ زیربنا")
     user_type=models.CharField(max_length=25,verbose_name="نوع کاربری")#قابل تکرار

@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'forms',
     'bimemasajed1',
+    'Insurance',
 ]
 
 MIDDLEWARE = [

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}نمایش اطلاعات{% endblock %}
+
+{% block content %}
+<div class="p-6 max-w-4xl mx-auto">
+  <h1 class="text-2xl font-bold mb-6 text-center text-indigo-700">تمام اطلاعات شما</h1>
+
+  {% for section, items in data.items %}
+    <div class="bg-white rounded-lg shadow p-4 mb-4">
+      <h2 class="text-lg font-semibold text-indigo-600 mb-2">{{ section }}</h2>
+
+      {% if items %}
+        {% if items.items %}
+          <!-- بخش دیکشنری (اطلاعات مسجد) -->
+          <ul class="space-y-1">
+            {% for key, value in items.items %}
+              <li>
+                <span class="font-medium text-gray-700">{{ key }}:</span>
+                <span class="text-gray-900">{{ value }}</span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <!-- بخش لیست دیکشنری‌ها (خادمین و هیات امنا) -->
+          {% for obj in items %}
+            <div class="border border-gray-200 rounded p-2 mb-2">
+              <ul class="space-y-1">
+                {% for key, value in obj.items %}
+                  <li>
+                    <span class="font-medium text-gray-700">{{ key }}:</span>
+                    <span class="text-gray-900">{{ value }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% else %}
+        <p class="text-gray-500">اطلاعاتی موجود نیست</p>
+      {% endif %}
+
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
