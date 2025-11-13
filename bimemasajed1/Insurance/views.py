@@ -32,27 +32,38 @@ def get_all_data_for_signup(request):
             d.pop('id', None)
             d.pop('registration', None)
             board_list.append({b._meta.get_field(k).verbose_name: v for k, v in d.items()})
-        
+
+        building_list=[]
+        for b in main.building.all():
+            d = model_to_dict(b)
+            d.pop('id', None)
+            d.pop('registration', None)
+            building_list.append({b._meta.get_field(k).verbose_name: v for k, v in d.items()})
+
         return {
             "اطلاعات مسجد": main_verbose,
             "اطلاعات خادمین": person_list,
             "اطلاعات هیات امنا": board_list,
+            "اطلاعات ساختمان":building_list,
         }
+        
     except MainRegistration.DoesNotExist:
         return None
-def alldata_view(request):
-    signup = get_signup_from_session(request)
-    if not signup:
-        messages.error(request, "ابتدا وارد شوید!")
-        return redirect('login')
+def alldata_json(request):
+    if request.method=='POST':
+        signup = get_signup_from_session(request)
+        if not signup:
+            messages.error(request, "ابتدا وارد شوید!")
+            return redirect('login')
 
-    data = get_all_data_for_signup(signup)
-    if not data:
-        messages.error(request, "ابتدا اطلاعات مسجد را تکمیل کنید")
-        return redirect('mainform')
-
-    return JsonResponse(data)
-def showdata_view(request):
+        data = get_all_data_for_signup(signup)
+        if not data:
+            messages.error(request, "ابتدا اطلاعات مسجد را تکمیل کنید")
+            return redirect('mainform')
+        return JsonResponse(data)
+    else:
+        return redirect('/')
+def newinsurance_view(request):
     signup = get_signup_from_session(request)
     if not signup:
         messages.error(request, "ابتدا وارد شوید!")
@@ -64,3 +75,5 @@ def showdata_view(request):
         return redirect('mainform')
     
     return render(request, 'showdata.html', {'data': data})
+def myinsurance(request):
+    return render (request, 'myinsurance.html')
