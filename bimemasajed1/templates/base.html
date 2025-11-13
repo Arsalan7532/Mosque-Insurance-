@@ -49,6 +49,15 @@
             </a>
           </div>
         </details>
+        <a href="{% url 'myinsurance' %}" 
+          class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/myinsurance/' in request.path %}bg-indigo-600 text-white{% endif %}">
+          💼 بیمه‌های من
+        </a>
+
+        <a href="{% url 'insurance' %}" 
+          class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/insurance/' in request.path %}bg-indigo-600 text-white{% endif %}">
+          🧮 ثبت بیمه‌نامه جدید
+        </a>
 
         <a href="/about/" class="block py-2.5 px-4 rounded-lg hover:bg-indigo-600 transition {% if '/about/' in request.path %}bg-indigo-600 text-white{% endif %}">
           ℹ️ درباره ما
