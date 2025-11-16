@@ -1,45 +1,220 @@
 {% extends "base.html" %}
-{% block title %}نمایش اطلاعات{% endblock %}
+{% block title %}ثبت بیمه نامه{% endblock %}
 
 {% block content %}
 <div class="p-6 max-w-4xl mx-auto">
   <h1 class="text-2xl font-bold mb-6 text-center text-indigo-700">تمام اطلاعات شما</h1>
 
-  {% for section, items in data.items %}
-    <div class="bg-white rounded-lg shadow p-4 mb-4">
-      <h2 class="text-lg font-semibold text-indigo-600 mb-2">{{ section }}</h2>
+  <!-- تب‌ها -->
+  <div class="mb-6 border-b border-gray-200">
+    <ul class="flex flex-wrap -mb-px" id="tabs">
+      <li class="mr-2">
+        <button class="tab-button inline-block p-4 border-b-2 font-medium text-gray-600 border-transparent hover:text-indigo-700 active"
+                data-tab="tab1">
+          اطلاعات مسجد
+        </button>
+      </li>
 
-      {% if items %}
-        {% if items.items %}
-          <!-- بخش دیکشنری (اطلاعات مسجد) -->
-          <ul class="space-y-1">
-            {% for key, value in items.items %}
-              <li>
-                <span class="font-medium text-gray-700">{{ key }}:</span>
-                <span class="text-gray-900">{{ value }}</span>
-              </li>
+      <li class="mr-2">
+        <button class="tab-button inline-block p-4 border-b-2 font-medium text-gray-600 border-transparent hover:text-indigo-700"
+                data-tab="tab2"
+                {% if not is_endorsement %}disabled{% endif %}>
+          پوشش‌ها
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- تب 1: اطلاعات مسجد -->
+  <div id="tab1" class="tab-content">
+    {% for section, items in data.items %}
+      <div class="bg-white rounded-lg shadow p-4 mb-4">
+        <h2 class="text-lg font-semibold text-indigo-600 mb-2">{{ section }}</h2>
+
+        {% if items %}
+          {% if items.items %}
+            <ul class="space-y-1">
+              {% for key, value in items.items %}
+                <li>
+                  <span class="font-medium text-gray-700">{{ key }}:</span>
+                  <span class="text-gray-900">{{ value }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            {% for obj in items %}
+              <div class="border border-gray-200 rounded p-2 mb-2">
+                <ul class="space-y-1">
+                  {% for key, value in obj.items %}
+                    <li>
+                      <span class="font-medium text-gray-700">{{ key }}:</span>
+                      <span class="text-gray-900">{{ value }}</span>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </div>
             {% endfor %}
-          </ul>
+          {% endif %}
         {% else %}
-          <!-- بخش لیست دیکشنری‌ها (خادمین و هیات امنا) -->
-          {% for obj in items %}
-            <div class="border border-gray-200 rounded p-2 mb-2">
-              <ul class="space-y-1">
-                {% for key, value in obj.items %}
-                  <li>
-                    <span class="font-medium text-gray-700">{{ key }}:</span>
-                    <span class="text-gray-900">{{ value }}</span>
-                  </li>
-                {% endfor %}
-              </ul>
-            </div>
-          {% endfor %}
+          <p class="text-gray-500">اطلاعاتی موجود نیست</p>
         {% endif %}
-      {% else %}
-        <p class="text-gray-500">اطلاعاتی موجود نیست</p>
-      {% endif %}
 
+      </div>
+    {% endfor %}
+
+    <!-- دکمه تأیید اطلاعات (فقط وقتی الحاقیه نیست) -->
+    {% if not is_endorsement %}
+    <div class="text-center mt-4">
+      <button id="confirm-btn" class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+        اطلاعات مسجد مورد تائید است
+      </button>
     </div>
-  {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- تب 2: پوشش‌ها -->
+  <div id="tab2" class="tab-content {% if not is_endorsement %}hidden{% endif %}">
+    <div class="bg-white rounded-lg shadow p-4 space-y-4">
+      <h2 class="text-lg font-semibold text-indigo-600 mb-4">پوشش‌ها و فرم بیمه</h2>
+
+      <form method="POST">
+        {% csrf_token %}
+        {{ form.signup.as_hidden }}
+
+        {% if coverage_instance and not is_endorsement %}
+        <!-- پیام بیمه فعال -->
+        <div class="mb-4 text-center">
+          <p class="text-orange-600 font-medium">
+            شما یک بیمه نامه فعال دارید. در صورت نیاز به تغییرات، درخواست الحاقیه ثبت کنید.
+          </p>
+          <a href="?endorsement=true"
+             class="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
+            درخواست الحاقیه
+          </a>
+        </div>
+
+        {% else %}
+        <!-- فهرست پوشش‌ها -->
+        <fieldset class="border border-gray-200 p-4 rounded space-y-4">
+          <legend class="font-medium text-gray-700 mb-2">پوشش‌ها</legend>
+
+          <!-- وسایل نقلیه -->
+          <div>{{ form.vahanele_motori }} {{ form.vahanele_motori.label_tag }}</div>
+          <div id="params_vahanele_motori" class="ml-6 hidden">
+            {{ form.tabareh_66_person.label_tag }} {{ form.tabareh_66_person }}<br>
+            {{ form.tabareh_66_total.label_tag }} {{ form.tabareh_66_total }}
+          </div>
+
+          <!-- پزشکی / جنگ / ثالث / دیه -->
+          <div>{{ form.hazine_pezezhki }} {{ form.hazine_pezezhki.label_tag }}</div>
+          <div>{{ form.jange_az_sanavi }} {{ form.jange_az_sanavi.label_tag }}</div>
+          <div>{{ form.masouliat_ashkhas_sevom }} {{ form.masouliat_ashkhas_sevom.label_tag }}</div>
+          <div>{{ form.tedad_diyat }} {{ form.tedad_diyat.label_tag }}</div>
+
+          <!-- ماموریت -->
+          <div>{{ form.mamooriat_kharej }} {{ form.mamooriat_kharej.label_tag }}</div>
+          <div id="params_mamooriat_kharej" class="ml-6 hidden">
+            {{ form.mamooriat_kharej_person.label_tag }} {{ form.mamooriat_kharej_person }}<br>
+            {{ form.mamooriat_kharej_total.label_tag }} {{ form.mamooriat_kharej_total }}
+          </div>
+
+          <!-- مسئولیت مجری -->
+          <div>{{ form.masouliat_mojri }} {{ form.masouliat_mojri.label_tag }}</div>
+
+          <!-- غرامت روزانه -->
+          <div>{{ form.gharamat_roozane }} {{ form.gharamat_roozane.label_tag }}</div>
+          <div id="params_gharamat_roozane" class="ml-6 hidden">
+            {{ form.gharamat_roozane_person.label_tag }} {{ form.gharamat_roozane_person }}<br>
+            {{ form.gharamat_roozane_total.label_tag }} {{ form.gharamat_roozane_total }}
+          </div>
+
+          <!-- کارگشایی -->
+          <div>{{ form.hazine_kargoshay }} {{ form.hazine_kargoshay.label_tag }}</div>
+          <div id="params_hazine_kargoshay" class="ml-6 hidden">
+            {{ form.hazine_kargoshay_person.label_tag }} {{ form.hazine_kargoshay_person }}<br>
+            {{ form.hazine_kargoshay_total.label_tag }} {{ form.hazine_kargoshay_total }}
+          </div>
+
+          <!-- دیه افزایشی -->
+          <div>{{ form.die_increase }} {{ form.die_increase.label_tag }}</div>
+          <div id="params_die_increase" class="ml-6 hidden">
+            {{ form.die_increase_option.label_tag }} {{ form.die_increase_option }}
+          </div>
+        </fieldset>
+
+        <div class="text-center mt-6">
+          <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+            ثبت اطلاعات
+          </button>
+        </div>
+
+        {% endif %}
+      </form>
+    </div>
+  </div>
 </div>
+
+<script>
+  /* مدیریت تب‌ها */
+  const tabButtons = document.querySelectorAll('.tab-button');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+
+      tabContents.forEach(c => c.classList.add('hidden'));
+      tabButtons.forEach(b => b.classList.remove('border-indigo-600','text-indigo-700'));
+
+      document.getElementById(target).classList.remove('hidden');
+      btn.classList.add('border-indigo-600','text-indigo-700');
+    });
+  });
+
+  /* تأیید اطلاعات → فعال شدن تب پوشش‌ها */
+  const confirmBtn = document.getElementById("confirm-btn");
+  if(confirmBtn){
+    confirmBtn.addEventListener('click', () => {
+      const t = document.querySelector('button[data-tab="tab2"]');
+      if(t){
+        t.disabled = false;
+        t.click();
+      }
+    });
+  }
+
+  /* چک‌باکس‌هایی که پارامتر دارند */
+  const paramFields = [
+    "vahanele_motori",
+    "mamooriat_kharej",
+    "gharamat_roozane",
+    "hazine_kargoshay",
+    "die_increase"
+  ];
+
+  paramFields.forEach(name => {
+    const checkbox = document.querySelector(`input[name="${name}"]`);
+    const box = document.getElementById(`params_${name}`);
+
+    if(checkbox && box){
+      checkbox.addEventListener("change", () => {
+        box.classList.toggle("hidden", !checkbox.checked);
+      });
+      checkbox.dispatchEvent(new Event("change"));
+    }
+  });
+
+  /* حالت الحاقیه → مستقیم تب پوشش باز شود */
+  const IS_ENDORSEMENT = {{ is_endorsement|yesno:"true,false" }};
+  document.addEventListener("DOMContentLoaded", () => {
+    if(IS_ENDORSEMENT){
+      const tb = document.querySelector('button[data-tab="tab2"]');
+      if(tb){
+        tb.disabled = false;
+        tb.click();
+      }
+    }
+  });
+</script>
+
 {% endblock %}
