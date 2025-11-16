@@ -76,27 +76,23 @@ def newinsurance_view(request):
         messages.error(request, "ابتدا اطلاعات مسجد را تکمیل کنید")
         return redirect('mainform')
     
+    coverage_instance = Coverage.objects.filter(signup=signup).first()
+    is_endorsement = request.GET.get('endorsement') == 'true' # if ==true ?endorsement=true
+
     if request.method == 'POST':
-        is_endorsement = request.POST.get('endorsement', 'false') == 'true'
-
-        if not is_endorsement:
-            coverage_instance = Coverage.objects.filter(signup=signup).first()
-            form = Coverage_Form(request.POST, instance=coverage_instance)
-            if form.is_valid():
-                form.save()
-                return redirect('/')
-        else:
-            messages.success(request, 'درخواست الحاقیه بزودی بررسی میشود')  # الحاقیه بعدا
-
-    else:  # GET
-        coverage_instance = Coverage.objects.filter(signup=signup).first()
-        if coverage_instance:
-            messages.warning(
-                request,
-                "شما یک بیمه نامه باز دارید، درصورت درخواست تغییر (الحاقیه) گزینه درخواست تغییر را بزنید"
-            )
+        form = Coverage_Form(request.POST, instance=coverage_instance)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "اطلاعات با موفقیت ثبت شد")
+            return redirect('/')  # یا همان صفحه
+    else:
         form = Coverage_Form(instance=coverage_instance)
 
-    return render(request, 'showdata.html', {'data': data, 'form': form})
+    return render(request, 'showdata.html', {
+        'data': data,
+        'form': form,
+        'coverage_instance': coverage_instance,
+        'is_endorsement': is_endorsement,
+    })
 def myinsurance(request):
     return render (request, 'myinsurance.html')
