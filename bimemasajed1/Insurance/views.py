@@ -6,6 +6,7 @@ from forms.models import MainRegistration, question
 from .models import Coverage
 from .forms import Coverage_Form
 from forms.views import get_signup_from_session 
+from .services.coverage_calculator import CoverageCalculator
 def get_all_data_for_signup(request):
     signup = get_signup_from_session(request)
     try:
@@ -79,6 +80,10 @@ def newinsurance_view(request):
     coverage_instance = Coverage.objects.filter(signup=signup).first()
     is_endorsement = request.GET.get('endorsement') == 'true' # if ==true ?endorsement=true
 
+    # محاسبه نرخ پوشش‌ها
+    calculator = CoverageCalculator(coverage_instance, data['اطلاعات مسجد'])
+    detail, total = calculator.calculate()
+
     if request.method == 'POST':
         form = Coverage_Form(request.POST, instance=coverage_instance)
         if form.is_valid():
@@ -93,6 +98,8 @@ def newinsurance_view(request):
         'form': form,
         'coverage_instance': coverage_instance,
         'is_endorsement': is_endorsement,
+        'detail': detail,
+        'total': total,
     })
 def myinsurance(request):
     return render (request, 'myinsurance.html')
