@@ -13,7 +13,7 @@ class Coverage(models.Model):
     tabareh_66 = models.BooleanField(default=False)       # تبصره 1 ماده 66 قانون تامین اجتماعی
     masouliat_ashkhas_sevom = models.BooleanField(default=False)  # مسئولیت در قبال اشخاص ثالث
     tedad_diyat = models.BooleanField(default=False)      # تعدد دیات و دیات غیر مسری
-    mamooriat_khارج = models.BooleanField(default=False) # مأموریت خارج از کارگاه
+    mamooriat_kharej = models.BooleanField(default=False) # مأموریت خارج از کارگاه
     masouliat_mojri = models.BooleanField(default=False)  # مسئولیت مجری ذیصلاح ساختمان
     gharamat_roozane = models.BooleanField(default=False) # غرامت دستمزد روزانه
     hazine_kargoshay = models.BooleanField(default=False) # هزینه‌های پرداختی به کارشناس
@@ -24,8 +24,8 @@ class Coverage(models.Model):
     tabareh_66_person = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     tabareh_66_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     # ماموریت خارج
-    mamooriat_khارج_person = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    mamooriat_khارج_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    mamooriat_kharej_person = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
+    mamooriat_kharej_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     # غرامت دستمزد روزانه
     gharamat_roozane_person = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
     gharamat_roozane_total = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
