@@ -1,208 +1,156 @@
 {% extends "base.html" %}
 {% block title %}ثبت بیمه نامه{% endblock %}
-
 {% block content %}
-<div class="p-6 max-w-4xl mx-auto">
-  <h1 class="text-2xl font-bold mb-6 text-center text-indigo-700">تمام اطلاعات شما</h1>
 
-  <!-- تب‌ها -->
-  <div class="mb-6 border-b border-gray-200">
-    <ul class="flex flex-wrap -mb-px" id="tabs">
-      <li class="mr-2">
-        <button class="tab-button inline-block p-4 border-b-2 font-medium text-gray-600 border-transparent hover:text-indigo-700 active"
-                data-tab="tab1">
-          اطلاعات مسجد
-        </button>
-      </li>
+<div class="max-w-5xl mx-auto p-6 space-y-8">
 
-      <li class="mr-2">
-        <button class="tab-button inline-block p-4 border-b-2 font-medium text-gray-600 border-transparent hover:text-indigo-700"
-                data-tab="tab2"
-                {% if not is_endorsement %}disabled{% endif %}>
-          پوشش‌ها
-        </button>
-      </li>
-    </ul>
-  </div>
+    <h1 class="text-2xl font-bold text-center text-indigo-700">
+        بررسی و ثبت بیمه‌نامه مسجد
+    </h1>
 
-  <!-- تب 1: اطلاعات مسجد -->
-  <div id="tab1" class="tab-content">
-    {% for section, items in data.items %}
-      <div class="bg-white rounded-lg shadow p-4 mb-4">
-        <h2 class="text-lg font-semibold text-indigo-600 mb-2">{{ section }}</h2>
+    <!-- =========================
+        اطلاعات مسجد (نمایش تمیز)
+    ========================== -->
+    <section class="bg-white rounded-xl shadow p-6 space-y-6">
+        <h2 class="text-lg font-semibold text-indigo-600 border-b pb-2">
+            اطلاعات مسجد
+        </h2>
 
-        {% if items %}
-          {% if items.items %}
-            <ul class="space-y-1">
-              {% for key, value in items.items %}
-                <li>
-                  <span class="font-medium text-gray-700">{{ key }}:</span>
-                  <span class="text-gray-900">{{ value }}</span>
-                </li>
-              {% endfor %}
-            </ul>
-          {% else %}
-            {% for obj in items %}
-              <div class="border border-gray-200 rounded p-2 mb-2">
-                <ul class="space-y-1">
-                  {% for key, value in obj.items %}
-                    <li>
-                      <span class="font-medium text-gray-700">{{ key }}:</span>
-                      <span class="text-gray-900">{{ value }}</span>
-                    </li>
-                  {% endfor %}
-                </ul>
-              </div>
-            {% endfor %}
-          {% endif %}
-        {% else %}
-          <p class="text-gray-500">اطلاعاتی موجود نیست</p>
-        {% endif %}
-      </div>
-    {% endfor %}
+        {% for section, items in data.items %}
+            <div>
+                <h3 class="font-medium text-gray-800 mb-2">
+                    {{ section }}
+                </h3>
 
-    {% if not is_endorsement %}
-    <div class="text-center mt-4">
-      <button id="confirm-btn" class="px-6 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
-        اطلاعات مسجد مورد تائید است
-      </button>
-    </div>
-    {% endif %}
-  </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    {% if items.items %}
+                        {% for key, value in items.items %}
+                            <div class="flex justify-between bg-gray-50 rounded px-3 py-2">
+                                <span class="text-gray-600">{{ key }}</span>
+                                <span class="font-medium text-gray-900">{{ value }}</span>
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        {% for obj in items %}
+                            {% for key, value in obj.items %}
+                                <div class="flex justify-between bg-gray-50 rounded px-3 py-2">
+                                    <span class="text-gray-600">{{ key }}</span>
+                                    <span class="font-medium text-gray-900">{{ value }}</span>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </section>
 
-  <!-- تب 2: پوشش‌ها -->
-  <div id="tab2" class="tab-content {% if not is_endorsement %}hidden{% endif %}">
-    <div class="bg-white rounded-lg shadow p-4 space-y-4">
-      <h2 class="text-lg font-semibold text-indigo-600 mb-4">پوشش‌ها و فرم بیمه</h2>
+    <!-- =========================
+        پوشش‌ها
+    ========================== -->
+    <section class="bg-white rounded-xl shadow p-6 space-y-6">
+        <h2 class="text-lg font-semibold text-indigo-600 border-b pb-2">
+            انتخاب پوشش‌های بیمه
+        </h2>
 
-      <form method="POST">
-        {% csrf_token %}
-        {{ form.signup.as_hidden }}
+        <form method="POST">
+            {% csrf_token %}
 
-        {% if coverage_instance and not is_endorsement %}
-        <div class="mb-4 text-center">
-          <p class="text-orange-600 font-medium">
-            شما یک بیمه نامه فعال دارید. در صورت نیاز به تغییرات، درخواست الحاقیه ثبت کنید.
-          </p>
-          <a href="?endorsement=true"
-             class="px-6 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
-            درخواست الحاقیه
-          </a>
-        </div>
+            <div class="space-y-4">
 
-        {% else %}
-        <fieldset class="border border-gray-200 p-4 rounded space-y-4">
-          <legend class="font-medium text-gray-700 mb-2">پوشش‌ها</legend>
+                {% for field in form %}
+                    {% if field.field.widget.input_type == "checkbox" %}
+                        <div class="flex justify-between items-center border rounded-lg p-3">
+                            <div class="flex items-center gap-2">
+                                {{ field }}
+                                {{ field.label_tag }}
+                            </div>
+                            <span
+                                class="price text-sm font-medium text-green-600"
+                                data-name="{{ field.name }}"
+                            >
+                                ۰ تومان
+                            </span>
+                        </div>
+                    {% endif %}
+                {% endfor %}
 
-          <!-- حلقه روی تمام پوشش‌ها -->
-          {% for key, value in detail.items %}
-          <div class="flex justify-between items-center">
-            <span>{{ key }}</span>
-            <span class="font-medium text-green-600">{{ value|intcomma }} تومان</span>
-          </div>
-          {% endfor %}
+            </div>
 
-          <!-- اگر نیاز باشه فرم‌های مربوط به پارامترها هم باقی بمونن -->
-          {% if form.vahanele_motori %}
-          <div id="params_vahanele_motori" class="ml-6 hidden">
-            {{ form.tabareh_66_person.label_tag }} {{ form.tabareh_66_person }}<br>
-            {{ form.tabareh_66_total.label_tag }} {{ form.tabareh_66_total }}
-          </div>
-          {% endif %}
-          {% if form.mamooriat_kharej %}
-          <div id="params_mamooriat_kharej" class="ml-6 hidden">
-            {{ form.mamooriat_kharej_person.label_tag }} {{ form.mamooriat_kharej_person }}<br>
-            {{ form.mamooriat_kharej_total.label_tag }} {{ form.mamooriat_kharej_total }}
-          </div>
-          {% endif %}
-          {% if form.gharamat_roozane %}
-          <div id="params_gharamat_roozane" class="ml-6 hidden">
-            {{ form.gharamat_roozane_person.label_tag }} {{ form.gharamat_roozane_person }}<br>
-            {{ form.gharamat_roozane_total.label_tag }} {{ form.gharamat_roozane_total }}
-          </div>
-          {% endif %}
-          {% if form.hazine_kargoshay %}
-          <div id="params_hazine_kargoshay" class="ml-6 hidden">
-            {{ form.hazine_kargoshay_person.label_tag }} {{ form.hazine_kargoshay_person }}<br>
-            {{ form.hazine_kargoshay_total.label_tag }} {{ form.hazine_kargoshay_total }}
-          </div>
-          {% endif %}
-          {% if form.die_increase %}
-          <div id="params_die_increase" class="ml-6 hidden">
-            {{ form.die_increase_option.label_tag }} {{ form.die_increase_option }}
-          </div>
-          {% endif %}
+            <!-- قیمت‌ها -->
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg space-y-2 border-r-4 border-green-500">
+                <div class="flex justify-between">
+                    <span class="text-gray-700">حق بیمه پایه</span>
+                    <span id="base-price" class="font-medium"></span>
+                </div>
 
-        </fieldset>
+                <div class="flex justify-between text-lg font-bold">
+                    <span>مبلغ نهایی</span>
+                    <span id="total-price" class="text-green-700"></span>
+                </div>
+            </div>
 
-        <div class="flex justify-between mt-6">
-          <button type="submit" class="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700">
-            ثبت اطلاعات
-          </button>
-          <span class="font-bold text-indigo-700">
-            جمع کل: {{ total|intcomma }} تومان
-          </span>
-        </div>
+            <div class="text-center mt-6">
+                <button
+                    type="submit"
+                    class="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                >
+                    ثبت نهایی بیمه‌نامه
+                </button>
+            </div>
 
-        {% endif %}
-      </form>
-    </div>
-  </div>
+        </form>
+    </section>
+
 </div>
 
+<!-- =========================
+    JAVASCRIPT (تمیز و منطقی)
+========================= -->
 <script>
-  const tabButtons = document.querySelectorAll('.tab-button');
-  const tabContents = document.querySelectorAll('.tab-content');
+    const BASE_PRICE = {{ base_price }};
+    const RATES = {{ rates|safe }};
 
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const target = btn.dataset.tab;
-      tabContents.forEach(c => c.classList.add('hidden'));
-      tabButtons.forEach(b => b.classList.remove('border-indigo-600','text-indigo-700'));
-      document.getElementById(target).classList.remove('hidden');
-      btn.classList.add('border-indigo-600','text-indigo-700');
-    });
-  });
+    const coverageState = {};
 
-  const confirmBtn = document.getElementById("confirm-btn");
-  if(confirmBtn){
-    confirmBtn.addEventListener('click', () => {
-      const t = document.querySelector('button[data-tab="tab2"]');
-      if(t){
-        t.disabled = false;
-        t.click();
-      }
-    });
-  }
-
-  const paramFields = [
-    "vahanele_motori",
-    "mamooriat_kharej",
-    "gharamat_roozane",
-    "hazine_kargoshay",
-    "die_increase"
-  ];
-
-  paramFields.forEach(name => {
-    const checkbox = document.querySelector(`input[name="${name}"]`);
-    const box = document.getElementById(`params_${name}`);
-    if(checkbox && box){
-      checkbox.addEventListener("change", () => {
-        box.classList.toggle("hidden", !checkbox.checked);
-      });
-      checkbox.dispatchEvent(new Event("change"));
+    function formatPrice(n){
+        return new Intl.NumberFormat('fa-IR').format(n) + ' تومان';
     }
-  });
 
-  const IS_ENDORSEMENT = {{ is_endorsement|yesno:"true,false" }};
-  document.addEventListener("DOMContentLoaded", () => {
-    if(IS_ENDORSEMENT){
-      const tb = document.querySelector('button[data-tab="tab2"]');
-      if(tb){
-        tb.disabled = false;
-        tb.click();
-      }
+    function getCoveragePrice(name){
+        if (RATES[name]) {
+            return Math.round(BASE_PRICE * RATES[name]);
+        }
+        return 0;
     }
-  });
+
+    function updateCoverage(name){
+        const checkbox = document.querySelector(`input[name="${name}"]`);
+        const priceEl = document.querySelector(`.price[data-name="${name}"]`);
+
+        const price = getCoveragePrice(name);
+
+        priceEl.textContent = formatPrice(price);
+        priceEl.style.opacity = checkbox.checked ? '1' : '0.4';
+
+        coverageState[name] = checkbox.checked ? price : 0;
+
+        updateTotal();
+    }
+
+    function updateTotal(){
+        let total = BASE_PRICE;
+        Object.values(coverageState).forEach(v => total += v);
+
+        document.getElementById('total-price').textContent = formatPrice(total);
+    }
+
+    document.getElementById('base-price').textContent = formatPrice(BASE_PRICE);
+
+    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+        cb.addEventListener('change', () => updateCoverage(cb.name));
+        updateCoverage(cb.name);
+    });
 </script>
+
 {% endblock %}

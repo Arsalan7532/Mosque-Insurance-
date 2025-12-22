@@ -1,3 +1,4 @@
+import json
 from django.shortcuts import render,redirect
 from django.contrib import messages
 from django.forms.models import model_to_dict
@@ -7,6 +8,7 @@ from .models import Coverage
 from .forms import Coverage_Form
 from forms.views import get_signup_from_session 
 from .services.coverage_calculator import CoverageCalculator
+from .services.base_calculator import BaseCalculator
 def get_all_data_for_signup(request):
     signup = get_signup_from_session(request)
     try:
@@ -44,12 +46,17 @@ def get_all_data_for_signup(request):
             building_list.append({b._meta.get_field(k).verbose_name: v for k, v in d.items()})
 
         return {
-            "اطلاعات مسجد": main_verbose,
-            "اطلاعات خادمین": person_list,
-            "اطلاعات هیات امنا": board_list,
-            "اطلاعات ساختمان":building_list,
-        }
-        
+            "data": {
+                "اطلاعات مسجد": main_verbose,
+                "اطلاعات خادمین": person_list,
+                "اطلاعات هیات امنا": board_list,
+                "اطلاعات ساختمان": building_list,
+            },
+            "objects": {
+                "main": main,
+                "buildings": main.building.all(),
+            }
+        }        
     except MainRegistration.DoesNotExist:
         return None
 def alldata_json(request):
@@ -66,6 +73,14 @@ def alldata_json(request):
         return JsonResponse(data)
     else:
         return redirect('/')
+
+def get_main_for_signup(request):
+    signup = get_signup_from_session(request)
+    try:
+        return MainRegistration.objects.get(registration=signup)
+    except MainRegistration.DoesNotExist:
+        return None
+    
 def newinsurance_view(request):
     signup = get_signup_from_session(request)
     if not signup:
@@ -73,6 +88,7 @@ def newinsurance_view(request):
         return redirect('login')
 
     data = get_all_data_for_signup(request)
+    
     if not data:
         messages.error(request, "ابتدا اطلاعات مسجد را تکمیل کنید")
         return redirect('mainform')
@@ -81,9 +97,17 @@ def newinsurance_view(request):
     is_endorsement = request.GET.get('endorsement') == 'true' # if ==true ?endorsement=true
 
     # محاسبه نرخ پوشش‌ها
-    calculator = CoverageCalculator(coverage_instance, data['اطلاعات مسجد'])
-    detail, total = calculator.calculate()
+    main=get_main_for_signup(request)
+    if not main :
+        messages.error(request,"اطلاعات مسجد را تکمیل نمایید")
+    building=main.building.first()
+    base_price = BaseCalculator().calculate(building)
+    detail, total = {}, 0
+    if coverage_instance:
+        calculator = CoverageCalculator(base_price, coverage_instance)
+        detail, total = calculator.calculate()
 
+    # ثبت اطلاعات
     if request.method == 'POST':
         form = Coverage_Form(request.POST, instance=coverage_instance)
         if form.is_valid():
@@ -93,6 +117,25 @@ def newinsurance_view(request):
     else:
         form = Coverage_Form(instance=coverage_instance)
 
+    # نرخ‌های پوشش‌ها برای محاسبه سمت کلاینت
+    rates = {
+        'vahanele_motori': 0.05,  # 5%
+        'hazine_pezezhki': 0.07,  # 7%
+        'jange_az_sanavi': 0.03,  # 3%
+        'masouliat_ashkhas_sevom': 0.06,  # 6%
+        'tedad_diyat': 0.04,  # 4%
+        'masouliat_mojri': 0.02,  # 2%
+        'tabareh_66': 0.001,  # 0.1%
+        'mamooriat_kharej': 0.0012,  # 0.12%
+        'gharamat_roozane': 0.002,  # 0.2%
+        'hazine_kargoshay': 0.0015,  # 0.15%
+        'die_increase_multipliers': {
+            '1': 0.03,  # حداکثر یکسال
+            '2': 0.05,  # حداکثر دو سال
+            '3': 0.08,  # حداکثر سه سال
+        }
+    }
+
     return render(request, 'showdata.html', {
         'data': data,
         'form': form,
@@ -100,6 +143,8 @@ def newinsurance_view(request):
         'is_endorsement': is_endorsement,
         'detail': detail,
         'total': total,
+        'base_price': base_price if base_price > 0 else 1000000,
+        'rates': rates,
     })
 def myinsurance(request):
     return render (request, 'myinsurance.html')
