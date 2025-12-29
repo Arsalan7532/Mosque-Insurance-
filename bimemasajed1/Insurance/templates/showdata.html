@@ -8,42 +8,91 @@
         بررسی و ثبت بیمه‌نامه مسجد
     </h1>
 
-    <!-- =========================
-        اطلاعات مسجد (نمایش تمیز)
-    ========================== -->
-    <section class="bg-white rounded-xl shadow p-6 space-y-6">
-        <h2 class="text-lg font-semibold text-indigo-600 border-b pb-2">
-            اطلاعات مسجد
-        </h2>
+<!-- =========================
+    اطلاعات مسجد
+    ========================= -->
+<section class="bg-white rounded-2xl shadow-lg p-8 space-y-12">
+    <h2 class="text-3xl font-bold text-indigo-700 border-b-2 border-indigo-200 pb-4">
+        📋 اطلاعات ثبت‌شده مسجد
+    </h2>
 
-        {% for section, items in data.items %}
-            <div>
-                <h3 class="font-medium text-gray-800 mb-2">
-                    {{ section }}
-                </h3>
+    {% for section_title, section_data in data.data.items %}
+        <div class="space-y-8">
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    {% if items.items %}
-                        {% for key, value in items.items %}
-                            <div class="flex justify-between bg-gray-50 rounded px-3 py-2">
-                                <span class="text-gray-600">{{ key }}</span>
-                                <span class="font-medium text-gray-900">{{ value }}</span>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        {% for obj in items %}
-                            {% for key, value in obj.items %}
-                                <div class="flex justify-between bg-gray-50 rounded px-3 py-2">
-                                    <span class="text-gray-600">{{ key }}</span>
-                                    <span class="font-medium text-gray-900">{{ value }}</span>
-                                </div>
-                            {% endfor %}
-                        {% endfor %}
-                    {% endif %}
+            <h3 class="text-2xl font-semibold text-gray-800 flex items-center gap-3">
+                <span class="w-4 h-4 bg-indigo-600 rounded-full"></span>
+                {{ section_title }}
+            </h3>
+
+            {# 🔹 اگر دیکشنری است (اطلاعات مسجد) #}
+            {% if section_data.items and not section_data.0 %}
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for key, value in section_data.items %}
+                        <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-6 shadow hover:shadow-xl transition">
+                            <p class="text-sm font-medium text-gray-600 mb-2">
+                                {{ key }}
+                            </p>
+                            <p class="text-lg font-bold text-gray-400">
+                                {% if value %}
+                                    {% if value.year %}
+                                        {{ value|date:"Y/m/d" }}
+                                    {% else %}
+                                        {{ value }}
+                                    {% endif %}
+                                {% else %}
+                                    —
+                                {% endif %}
+                            </p>
+                        </div>
+                    {% endfor %}
                 </div>
-            </div>
-        {% endfor %}
-    </section>
+
+            {# 🔹 اگر لیست از دیکشنری‌هاست #}
+            {% else %}
+                {% if section_data %}
+                    <div class="space-y-6">
+
+                        {% for record in section_data %}
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                                {% for key, value in record.items %}
+                                    <div class="bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl p-6 shadow hover:shadow-xl transition">
+                                        <p class="text-sm font-medium text-gray-600 mb-2">
+                                            {{ key }}
+                                        </p>
+                                        <p class="text-lg font-bold text-gray-400">
+                                            {% if value %}
+                                                {% if value.year %}
+                                                    {{ value|date:"Y/m/d" }}
+                                                {% else %}
+                                                    {{ value }}
+                                                {% endif %}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                {% endfor %}
+
+                            </div>
+
+                            {% if not forloop.last %}
+                                <hr class="border-t-2 border-dashed border-indigo-200 my-4">
+                            {% endif %}
+
+                        {% endfor %}
+
+                    </div>
+                {% else %}
+                    <p class="text-gray-500 italic text-lg">
+                        هیچ موردی ثبت نشده است.
+                    </p>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endfor %}
+</section>
+
 
     <!-- =========================
         پوشش‌ها

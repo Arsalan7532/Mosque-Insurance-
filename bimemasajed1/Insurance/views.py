@@ -21,29 +21,43 @@ def get_all_data_for_signup(request):
         main_dict.pop('registration', None)
         
         # نگاشت به verbose_name
-        main_verbose = {main._meta.get_field(k).verbose_name: v for k, v in main_dict.items()}
-        
+        #main_verbose = [(main._meta.get_field(k).verbose_name, v) for k, v in main_dict.items()]
+        main_verbose = {main._meta.get_field(k).verbose_name: v for k, v in main_dict.items()}   
+
         # مشابه برای مدل‌های وابسته
         person_list = []
         for p in main.persons.all():
             d = model_to_dict(p)
             d.pop('id', None)
             d.pop('registration', None)
-            person_list.append({p._meta.get_field(k).verbose_name: v for k, v in d.items()})
+
+            person_list.append({
+                p._meta.get_field(k).verbose_name: v
+                for k, v in d.items()
+            })
+            
         
         board_list = []
         for b in main.TrusteesBoard.all():
             d = model_to_dict(b)
             d.pop('id', None)
             d.pop('registration', None)
-            board_list.append({b._meta.get_field(k).verbose_name: v for k, v in d.items()})
 
-        building_list=[]
+            board_list.append({
+                b._meta.get_field(k).verbose_name: v
+                for k, v in d.items()
+            })
+
+        building_list = []
         for b in main.building.all():
             d = model_to_dict(b)
             d.pop('id', None)
             d.pop('registration', None)
-            building_list.append({b._meta.get_field(k).verbose_name: v for k, v in d.items()})
+
+            building_list.append({
+                b._meta.get_field(k).verbose_name: v
+                for k, v in d.items()
+            })
 
         return {
             "data": {
