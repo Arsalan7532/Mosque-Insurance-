@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.forms.models import model_to_dict
 from django.http import JsonResponse
 from forms.models import MainRegistration, question
-from .models import Coverage
+from .models import Coverage,Insurance
 from .forms import Coverage_Form
 from forms.views import get_signup_from_session 
 from .services.coverage_calculator import CoverageCalculator
@@ -95,6 +95,112 @@ def get_main_for_signup(request):
     except MainRegistration.DoesNotExist:
         return None
     
+#def newinsurance_view(request):
+    signup = get_signup_from_session(request)
+    if not signup:
+        messages.error(request, "ابتدا وارد شوید!")
+        return redirect('login')
+
+    data = get_all_data_for_signup(request)
+    if not data:
+        messages.error(request, "ابتدا اطلاعات مسجد را تکمیل کنید")
+        return redirect('mainform')
+
+    main = get_main_for_signup(request)
+    if not main:
+        messages.error(request, "اطلاعات مسجد ناقص است")
+        return redirect('mainform')
+
+    building = main.building.first()
+    if not building:
+        messages.error(request, "اطلاعات ساختمان تکمیل نشده")
+        return redirect('buildform')
+
+    base_price = BaseCalculator().calculate(building)
+
+    # ✅ خیلی مهم: اول coverage_instance
+    coverage_instance = Coverage.objects.filter(signup=signup).first()
+
+    # آیا بیمه فعال یا صادر شده داریم؟
+    active_insurance = Insurance.objects.filter(
+        signup=signup,
+        status__in=['active', 'issued']
+    ).exists()
+
+    # محاسبه پوشش‌ها (فقط اگر قبلاً انتخاب شده باشند)
+    detail, total = {}, 0
+    if coverage_instance:
+        calculator = CoverageCalculator(base_price, coverage_instance)
+        detail, total = calculator.calculate()
+
+    # -------------------------
+    # POST
+    # -------------------------
+    if request.method == 'POST':
+        form = Coverage_Form(
+            request.POST,
+            instance=coverage_instance,
+            signup=signup,
+            is_endorsement=active_insurance
+        )
+
+        if form.is_valid():
+            coverage = form.save(commit=False)
+            coverage.signup = signup
+            coverage.save()
+
+            # ساخت یا بروزرسانی Insurance
+            insurance, created = Insurance.objects.get_or_create(
+                signup=signup,
+                defaults={
+                    'coverage': coverage,
+                    'status': 'draft'
+                }
+            )
+            if not created:
+                insurance.coverage = coverage
+                insurance.save()
+
+            messages.success(request, "اطلاعات با موفقیت ثبت شد")
+            return redirect('/')
+
+    # -------------------------
+    # GET
+    # -------------------------
+    else:
+        form = Coverage_Form(
+            instance=coverage_instance,
+            signup=signup,
+            is_endorsement=active_insurance
+        )
+    rates = {
+        'vahanele_motori': 0.05,  # 5%
+        'hazine_pezezhki': 0.07,  # 7%
+        'jange_az_sanavi': 0.03,  # 3%
+        'masouliat_ashkhas_sevom': 0.06,  # 6%
+        'tedad_diyat': 0.04,  # 4%
+        'masouliat_mojri': 0.02,  # 2%
+        'tabareh_66': 0.001,  # 0.1%
+        'mamooriat_kharej': 0.0012,  # 0.12%
+        'gharamat_roozane': 0.002,  # 0.2%
+        'hazine_kargoshay': 0.0015,  # 0.15%
+        'die_increase_multipliers': {
+            '1': 0.03,  # حداکثر یکسال
+            '2': 0.05,  # حداکثر دو سال
+            '3': 0.08,  # حداکثر سه سال
+        }
+    }
+    return render(request, 'showdata.html', {
+        'data': data,
+        'form': form,
+        'coverage_instance': coverage_instance,
+        'detail': detail,
+        'total': total,
+        'base_price': base_price,
+        'rate': rates,
+        'is_endorsement': active_insurance,
+    })
+
 def newinsurance_view(request):
     signup = get_signup_from_session(request)
     if not signup:
@@ -107,29 +213,71 @@ def newinsurance_view(request):
         messages.error(request, "ابتدا اطلاعات مسجد را تکمیل کنید")
         return redirect('mainform')
     
-    coverage_instance = Coverage.objects.filter(signup=signup).first()
-    is_endorsement = request.GET.get('endorsement') == 'true' # if ==true ?endorsement=true
-
     # محاسبه نرخ پوشش‌ها
     main=get_main_for_signup(request)
     if not main :
         messages.error(request,"اطلاعات مسجد را تکمیل نمایید")
     building=main.building.first()
     base_price = BaseCalculator().calculate(building)
+
+    coverage_instance = Coverage.objects.filter(signup=signup).first()
     detail, total = {}, 0
     if coverage_instance:
         calculator = CoverageCalculator(base_price, coverage_instance)
         detail, total = calculator.calculate()
 
+
+    active_insurance = Insurance.objects.filter(
+        signup=signup, 
+        status__in=['active', 'issued']
+    ).exists()  # آیا بیمه فعال/صادره وجود دارد؟
+
+    # ثبت اطلاعات
     # ثبت اطلاعات
     if request.method == 'POST':
-        form = Coverage_Form(request.POST, instance=coverage_instance)
+
+        # ❌ اگر بیمه فعال است → اجازه ویرایش نداریم
+        if active_insurance:
+            messages.warning(
+                request,
+                "بیمه‌نامه فعال است. برای تغییر پوشش‌ها باید درخواست الحاقیه ثبت شود."
+            )
+            return redirect('insurance')  # یا همان صفحه
+
+        form = Coverage_Form(
+            request.POST,
+            instance=coverage_instance,
+            signup=signup,
+            is_endorsement=active_insurance
+        )
+        if active_insurance:
+            messages.warning(request, "برای تغییر پوشش‌ها باید الحاقیه ثبت کنید")
+            return redirect('insurance')
+
         if form.is_valid():
-            form.save()
-            messages.success(request, "اطلاعات با موفقیت ثبت شد")
-            return redirect('/')  # یا همان صفحه
+            coverage = form.save(commit=False)
+            coverage.signup = signup
+            coverage.save()
+
+            insurance, created = Insurance.objects.get_or_create(
+                signup=signup,
+                defaults={
+                    'coverage': coverage,
+                    'status': 'draft'
+                }
+            )
+            if not created:
+                insurance.coverage = coverage
+                insurance.status = 'draft'
+                insurance.save()
+                messages.success(request, "پوشش‌ها با موفقیت ثبت شد")
+                return redirect('/')
     else:
-        form = Coverage_Form(instance=coverage_instance)
+        form = Coverage_Form(
+            instance=coverage_instance,
+            signup=signup,
+            is_endorsement=active_insurance
+        )
 
     # نرخ‌های پوشش‌ها برای محاسبه سمت کلاینت
     rates = {
@@ -154,7 +302,7 @@ def newinsurance_view(request):
         'data': data,
         'form': form,
         'coverage_instance': coverage_instance,
-        'is_endorsement': is_endorsement,
+        'is_endorsement': active_insurance,
         'detail': detail,
         'total': total,
         'base_price': base_price if base_price > 0 else 1000000,

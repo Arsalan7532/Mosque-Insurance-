@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% block title %}ثبت بیمه نامه{% endblock %}
 {% block content %}
 
@@ -94,69 +95,96 @@
 </section>
 
 
-    <!-- =========================
-        پوشش‌ها
-    ========================== -->
-    <section class="bg-white rounded-xl shadow p-6 space-y-6">
-        <h2 class="text-lg font-semibold text-indigo-600 border-b pb-2">
-            انتخاب پوشش‌های بیمه
-        </h2>
+<!-- =========================
+    پوشش‌ها
+========================== -->
+<section class="bg-white rounded-xl shadow p-6 space-y-6">
+    <h2 class="text-lg font-semibold text-indigo-600 border-b pb-2">
+        انتخاب پوشش‌های بیمه
+    </h2>
 
-        <form method="POST">
-            {% csrf_token %}
+    <form method="POST">
+        {% csrf_token %}
+        <div class="space-y-4">
+        {% for field in form %}
+            {% if field.field.widget.input_type == "checkbox" %}
+                <div class="flex justify-between items-center border rounded-lg p-3
+                    {% if is_endorsement %} opacity-60 {% endif %}">
 
-            <div class="space-y-4">
+                    <div class="flex items-center gap-2">
 
-                {% for field in form %}
-                    {% if field.field.widget.input_type == "checkbox" %}
-                        <div class="flex justify-between items-center border rounded-lg p-3">
-                            <div class="flex items-center gap-2">
-                                {{ field }}
-                                {{ field.label_tag }}
-                            </div>
-                            <span
-                                class="price text-sm font-medium text-green-600"
-                                data-name="{{ field.name }}"
+                        {% if is_endorsement %}
+                            <!-- checkbox نمایشی (غیرقابل تغییر) -->
+                            <input
+                                type="checkbox"
+                                {% if field.value %}checked{% endif %}
+                                disabled
+                                class="cursor-not-allowed"
                             >
-                                ۰ تومان
-                            </span>
-                        </div>
-                    {% endif %}
-                {% endfor %}
+                            <label class="text-gray-700">
+                                {{ field.label }}
+                            </label>
+                        {% else %}
+                            <!-- checkbox واقعی -->
+                            {{ field }}
+                            {{ field.label_tag }}
+                        {% endif %}
 
-            </div>
+                    </div>
 
-            <!-- قیمت‌ها -->
-            <div class="mt-6 p-4 bg-gray-50 rounded-lg space-y-2 border-r-4 border-green-500">
-                <div class="flex justify-between">
-                    <span class="text-gray-700">حق بیمه پایه</span>
-                    <span id="base-price" class="font-medium"></span>
+                    <span
+                        class="price text-sm font-medium text-green-600"
+                        data-name="{{ field.name }}">
+                        ۰ تومان
+                    </span>
+
                 </div>
+            {% endif %}
+        {% endfor %}
+        </div>
 
-                <div class="flex justify-between text-lg font-bold">
-                    <span>مبلغ نهایی</span>
-                    <span id="total-price" class="text-green-700"></span>
-                </div>
+        {% if is_endorsement %}
+            <div class="mt-4 p-4 bg-orange-50 border-l-4 border-orange-500 rounded-lg text-orange-800">
+                ⚠️ شما یک بیمه‌نامه فعال دارید. امکان ویرایش مستقیم پوشش‌ها وجود ندارد.
+                <br>در صورت نیاز به تغییر، لطفاً گزینه <b>درخواست الحاقیه</b> را انتخاب کنید.
             </div>
+        {% endif %}
 
+        <div class="mt-6 p-4 bg-gray-50 rounded-lg space-y-2 border-r-4 border-green-500">
+            <div class="flex justify-between">
+                <span class="text-gray-700">حق بیمه پایه</span>
+                <span id="base-price" class="font-medium">{{ base_price|intcomma }}</span>
+            </div>
+            <div class="flex justify-between text-lg font-bold">
+                <span>مبلغ نهایی</span>
+                <span id="total-price" class="text-green-700">{{ final_total|intcomma }}</span>
+            </div>
+        </div>
+
+        {% if not is_endorsement %}
             <div class="text-center mt-6">
-                <button
-                    type="submit"
-                    class="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-                >
+                <button type="submit" class="px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
                     ثبت نهایی بیمه‌نامه
                 </button>
             </div>
+        {% endif %}
+</section>
 
-        </form>
-    </section>
-
-</div>
+{% if is_endorsement %}
+    <div class="text-center mt-6">
+        <a
+            href="{% url 'request_endorsement' %}"
+            class="px-8 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 inline-block">
+            درخواست الحاقیه
+        </a>
+    </div>
+{% endif %}
 
 <!-- =========================
     JAVASCRIPT (تمیز و منطقی)
 ========================= -->
 <script>
+    const IS_ENDORSEMENT = {{ is_endorsement|yesno:"true,false" }};
     const BASE_PRICE = {{ base_price }};
     const RATES = {{ rates|safe }};
 
@@ -176,12 +204,10 @@
     function updateCoverage(name){
         const checkbox = document.querySelector(`input[name="${name}"]`);
         const priceEl = document.querySelector(`.price[data-name="${name}"]`);
-
         const price = getCoveragePrice(name);
 
         priceEl.textContent = formatPrice(price);
         priceEl.style.opacity = checkbox.checked ? '1' : '0.4';
-
         coverageState[name] = checkbox.checked ? price : 0;
 
         updateTotal();
@@ -190,16 +216,19 @@
     function updateTotal(){
         let total = BASE_PRICE;
         Object.values(coverageState).forEach(v => total += v);
-
         document.getElementById('total-price').textContent = formatPrice(total);
     }
 
     document.getElementById('base-price').textContent = formatPrice(BASE_PRICE);
 
-    document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
-        cb.addEventListener('change', () => updateCoverage(cb.name));
-        updateCoverage(cb.name);
-    });
+    if (IS_ENDORSEMENT) {
+        document.getElementById('total-price').textContent = formatPrice(BASE_PRICE);
+    } else {
+        document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+            cb.addEventListener('change', () => updateCoverage(cb.name));
+            updateCoverage(cb.name);
+        });
+    }
 </script>
 
 {% endblock %}

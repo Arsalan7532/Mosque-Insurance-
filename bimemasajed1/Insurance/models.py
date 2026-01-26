@@ -44,3 +44,17 @@ class Coverage(models.Model):
 
     def __str__(self):
         return f"Coverages for {self.signup}"
+    
+class Insurance(models.Model):
+    signup = models.ForeignKey(Signup, on_delete=models.CASCADE)
+    coverage = models.OneToOneField(Coverage, on_delete=models.CASCADE)
+    
+    STATUS_CHOICES = [
+        ('draft', 'در حال تکمیل'),
+        ('active', 'فعال'),
+        ('issued', 'صادر شده'),
+    ]
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)

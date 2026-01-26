@@ -6,4 +6,6 @@ urlpatterns = [
     path ('account/', include('forms.urls')),
     path('',views.home, name= 'home'),
     path('insurance/',include('Insurance.urls')),
+    path('pay/',include('payment.urls')),
+
 ]

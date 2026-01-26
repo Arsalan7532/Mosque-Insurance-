@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'forms',
     'bimemasajed1',
     'Insurance',
+    'payment',
 ]
 
 MIDDLEWARE = [

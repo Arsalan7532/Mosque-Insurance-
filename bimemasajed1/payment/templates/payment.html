@@ -1,0 +1,78 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+<section class="bg-white rounded-2xl shadow-lg p-8 space-y-10">
+
+    <!-- عنوان -->
+    <h2 class="text-3xl font-bold text-indigo-700 border-b-2 border-indigo-200 pb-4">
+        💳 پیش‌نمایش نهایی حق بیمه
+    </h2>
+
+    <!-- قیمت پایه -->
+    <div class="bg-indigo-50 rounded-xl p-6 flex justify-between items-center">
+        <span class="text-lg font-medium text-gray-700">
+            قیمت پایه بیمه
+        </span>
+        <span class="text-2xl font-bold text-indigo-700">
+            {{ base_price|intcomma }} تومان
+        </span>
+    </div>
+
+    <!-- ریز پوشش‌ها -->
+    <div class="space-y-6">
+        <h3 class="text-2xl font-semibold text-gray-800">
+            📑 جزئیات پوشش‌های انتخاب‌شده
+        </h3>
+
+        {% if detail_coverage %}
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for key, value in detail_coverage.items %}
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-5 hover:shadow transition">
+                        <p class="text-sm text-gray-600 mb-2">
+                            {{ key }}
+                        </p>
+                        <p class="text-lg font-bold text-gray-900">
+                            {{ value|intcomma }} تومان
+                        </p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 italic">
+                هیچ پوششی انتخاب نشده است.
+            </p>
+        {% endif %}
+    </div>
+
+    <!-- جمع کل -->
+    <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-2xl p-8 flex justify-between items-center">
+        <span class="text-2xl font-semibold">
+            مبلغ نهایی قابل پرداخت
+        </span>
+        <span class="text-3xl font-extrabold">
+            {{ final_total|intcomma }} تومان
+        </span>
+    </div>
+
+    <!-- دکمه پرداخت -->
+    <div class="flex justify-end">
+        <form method="post" action="{% url 'pay' %}">
+            {% csrf_token %}
+            <button
+                type="submit"
+                class="bg-green-600 hover:bg-green-700 text-white px-10 py-4 rounded-xl text-xl font-bold shadow-lg transition"
+            >
+                ✅ پرداخت و ثبت نهایی بیمه‌نامه
+            </button>
+        </form>
+    </div>
+
+</section>
+</body>
+</html>

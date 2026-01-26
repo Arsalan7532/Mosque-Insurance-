@@ -34,10 +34,20 @@ class Coverage_Form(forms.ModelForm):
             'die_increase': 'افزایش ریالی دیه',
             'die_increase_option': 'مدت افزایش ریالی دیه',
             }
-    def __init__(self, *args, **kwargs):
-        signup = kwargs.pop('signup', None)
-        super().__init__(*args, **kwargs)
-        # فیلد signup مخفی و پیش‌فرض پر شده
+    def __init__(self, *args, is_endorsement=False, signup=None, **kwargs):
+        # بیرون کشیدن signup از kwargs
         if signup:
+            kwargs['initial'] = kwargs.get('initial', {})
+            kwargs['initial']['signup'] = signup
+
+        super().__init__(*args, **kwargs)
+
+        # فیلد signup مخفی
+        if 'signup' in self.fields:
             self.fields['signup'].widget = forms.HiddenInput()
-            self.fields['signup'].initial = signup
+
+        # ⚡ غیرفعال کردن پوشش‌ها در صورت بیمه فعال
+        if is_endorsement:
+            for field_name, field in self.fields.items():
+                if isinstance(field.widget, forms.CheckboxInput):
+                    field.widget.attrs['disabled'] = 'disabled'
