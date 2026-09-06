@@ -47,14 +47,29 @@ class Coverage(models.Model):
     
 class Insurance(models.Model):
     signup = models.ForeignKey(Signup, on_delete=models.CASCADE)
-    coverage = models.OneToOneField(Coverage, on_delete=models.CASCADE)
-    
+    coverage = models.ForeignKey(Coverage, on_delete=models.CASCADE)
+    premium_quote = models.PositiveIntegerField(null=True, blank=True)  # مبلغ نهایی که در درگاه پرداخت شده
     STATUS_CHOICES = [
-        ('draft', 'در حال تکمیل'),
-        ('active', 'فعال'),
+        ('quote_requested', 'درخواست نرخ'),
+        ('quote_received', 'نرخ دریافت شد'),
+        ('payment_pending', 'منتظر پرداخت'),
+        ('payment_completed', 'پرداخت شد'),
         ('issued', 'صادر شده'),
+        ('draft', 'پیش‌نویس'),
+        ('failed', 'ناموفق'),
     ]
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='draft')
+    
+    policy_image = models.ImageField(
+    upload_to='insurance_policies/',  # پوشه ذخیره
+    null=True,
+    blank=True,
+    verbose_name='عکس بیمه‌نامه'
+)
+    transaction_id = models.CharField(max_length=100, null=True, blank=True)
+    
+    quote_received_at = models.DateTimeField(null=True, blank=True)
+    payment_date = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

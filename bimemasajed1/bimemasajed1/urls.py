@@ -7,5 +7,6 @@ urlpatterns = [
     path('',views.home, name= 'home'),
     path('insurance/',include('Insurance.urls')),
     path('pay/',include('payment.urls')),
+    path('api/',include('api.urls')),
 
 ]

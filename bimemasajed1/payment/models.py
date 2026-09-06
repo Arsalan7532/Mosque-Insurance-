@@ -1,8 +1,8 @@
 from django.db import models
-from Insurance.models import Coverage  
+from Insurance.models import Insurance  
 
 class Payment(models.Model):
-    coverage = models.ForeignKey(Coverage, on_delete=models.CASCADE, related_name="payments")
+    insurance_data = models.ForeignKey(Insurance, on_delete=models.CASCADE, related_name="payments")
     amount = models.PositiveIntegerField()  # مبلغ نهایی که برای درگاه میره
     status = models.CharField(
         max_length=20,

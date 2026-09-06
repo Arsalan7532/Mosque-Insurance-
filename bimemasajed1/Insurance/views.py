@@ -304,7 +304,7 @@ def newinsurance_view(request):
         'coverage_instance': coverage_instance,
         'is_endorsement': active_insurance,
         'detail': detail,
-        'total': total,
+        'final_total': total,
         'base_price': base_price if base_price > 0 else 1000000,
         'rates': rates,
     })

@@ -31,8 +31,8 @@ class LoginForm(forms.Form):
 class MainRegistration_form(StyledModelForm):
     class Meta:
         model=MainRegistration
-        #fields=['mosque_name','mosque_id','mosque_Capacity','mosque_postalcode','mosque_address','mosque_phone','created_phone']
-        fields='__all__'
+        fields=['mosque_name','mosque_id','mosque_Capacity','mosque_postalcode','mosque_address','mosque_phone','created_phone']
+        #fields='__all__'
         widgets = {
             'mosque_phone': forms.NumberInput(attrs={'placeholder': 'تلفن ثابت'}),
             'created_phone': forms.NumberInput(attrs={'placeholder': 'موبایل نماینده'}),
