@@ -80,30 +80,33 @@ def MainRegistration_view(request):
     signup = get_signup_from_session(request)
     if not signup:
         return redirect('login')  # یا مسیر مناسب
+    # لیست تمام مساجد کاربر
+    mains = MainRegistration.objects.filter(registration=signup)
 
-    # پیدا کردن MainRegistration مرتبط با این signup (ممکنه None باشه)
-    main_reg = MainRegistration.objects.filter(registration=signup).first()
+    # انتخاب مسجد موردنظر از پارامتر URL (?mosque_id=)
+    mosque_id = request.GET.get('mosque_id')
+    selected = None
+    if mosque_id:
+        selected = mains.filter(id=mosque_id).first()
 
-    # آیا کاربر در حالت ویرایش است؟ (با ?edit=true در URL)
-    editing = request.GET.get("edit") == "true"
+    # آیا کاربر در حالت ویرایش است؟ (با ?edit=true در URL) یا وقتی می‌خواهد مسجد جدید اضافه کند (?new=true)
+    editing = request.GET.get("edit") == "true" or request.GET.get('new') == 'true'
+    is_new = request.GET.get('new') == 'true'
 
     if request.method == 'POST':
-        # هنگام POST، اگر رکورد موجود است از همان برای instance استفاده کن
-        form = MainRegistration_form(request.POST, instance=main_reg)
+        # هنگام POST، اگر یک مسجد انتخاب شده باشد از آن برای instance استفاده کن
+        form = MainRegistration_form(request.POST, instance=selected)
         if form.is_valid():
             obj = form.save(commit=False)
-            # اگر رکورد جدید است یا registration تنظیم نشده، حتما registration را ست کن
             obj.registration = signup
             obj.save()
             messages.success(request, "اطلاعات مسجد با موفقیت ذخیره شد ✅")
-            return redirect('/')  # یا مسیر دلخواه بعد از ذخیره
+            return redirect('/account/mainform/')
         else:
             messages.error(request, "فرم معتبر نیست، لطفا مقادیر را بررسی کنید.")
     else:
-        # GET: نمایش فرم با instance (اگر رکورد هست) یا فرم خالی
-        form = MainRegistration_form(instance=main_reg)
-        # اگر رکورد وجود داره و کاربر در حالت ویرایش نیست → فیلدها را غیرفعال کن
-        if main_reg and not editing:
+        form = MainRegistration_form(instance=selected)
+        if selected and not editing:
             for field in form.fields.values():
                 field.widget.attrs['disabled'] = 'disabled'
 
@@ -111,13 +114,23 @@ def MainRegistration_view(request):
         'form': form,
         'signup': signup,
         'editing': editing,
-        'main_reg': main_reg,
+        'mains': mains,
+        'selected': selected,
+        'is_new': is_new,
     })
 @custom_login_required
 def PersonInfo_view(request):
     signup = get_signup_from_session(request)
-    # پیدا کردن مسجدی که این کاربر ثبت کرده
-    main_reg = MainRegistration.objects.filter(registration=signup).first()
+    # انتخاب مسجد موردنظر از پارامتر URL (?mosque_id=)
+    mosque_id = request.GET.get('mosque_id') or request.POST.get('mosque_id')
+    if mosque_id:
+        main_reg = MainRegistration.objects.filter(registration=signup, id=mosque_id).first()
+    else:
+        # اگر مشخص نشده، از اولین مسجد استفاده کن
+        main_reg = MainRegistration.objects.filter(registration=signup).first()
+    # لیست تمام مساجد کاربر برای نمایش در سربرگ
+    mains = MainRegistration.objects.filter(registration=signup)
+    selected = mains.filter(id=mosque_id).first() if mosque_id else None
 
     if not main_reg:
         messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
@@ -133,7 +146,7 @@ def PersonInfo_view(request):
             trustees.registration = main_reg
             trustees.save()
             messages.success(request, "اطلاعات هیات امنا ذخیره شد ✅")
-            return redirect('/')
+            return redirect(f'/account/mainform/?mosque_id={main_reg.id}')
     else:
         data = PersonInfo.objects.filter(registration=main_reg).first()
         form = PersonInfo_form(instance=data)
@@ -144,13 +157,22 @@ def PersonInfo_view(request):
     return render(request, 'personform.html', {
         'form': form,
         'signup': signup,
-        'editing': editing
+        'editing': editing,
+        'mosque_id': main_reg.id if main_reg else None,
+        'mosque_name': main_reg.mosque_name if main_reg else None,
+        'mains': mains,
+        'selected': selected,
     })
 @custom_login_required
 def BuildingInformation_view(request):
     signup = get_signup_from_session(request)
-    # پیدا کردن مسجدی که این کاربر ثبت کرده
-    main_reg = MainRegistration.objects.filter(registration=signup).first()
+    mosque_id = request.GET.get('mosque_id') or request.POST.get('mosque_id')
+    if mosque_id:
+        main_reg = MainRegistration.objects.filter(registration=signup, id=mosque_id).first()
+    else:
+        main_reg = MainRegistration.objects.filter(registration=signup).first()
+    mains = MainRegistration.objects.filter(registration=signup)
+    selected = mains.filter(id=mosque_id).first() if mosque_id else None
 
     if not main_reg:
         messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
@@ -166,7 +188,7 @@ def BuildingInformation_view(request):
             trustees.registration = main_reg
             trustees.save()
             messages.success(request, "اطلاعات هیات امنا ذخیره شد ✅")
-            return redirect('/')
+            return redirect(f'/account/mainform/?mosque_id={main_reg.id}')
     else:
         data = BuildingInformation.objects.filter(registration=main_reg).first()
         form = BuildingInformation_form(instance=data)
@@ -177,14 +199,23 @@ def BuildingInformation_view(request):
     return render(request, 'buildingform.html', {
         'form': form,
         'signup': signup,
-        'editing': editing
+        'editing': editing,
+        'mosque_id': main_reg.id if main_reg else None,
+        'mosque_name': main_reg.mosque_name if main_reg else None,
+        'mains': mains,
+        'selected': selected,
     })
 
 @custom_login_required
 def trusteesboard_view(request):
     signup = get_signup_from_session(request)
-    # پیدا کردن مسجدی که این کاربر ثبت کرده
-    main_reg = MainRegistration.objects.filter(registration=signup).first()
+    mosque_id = request.GET.get('mosque_id') or request.POST.get('mosque_id')
+    if mosque_id:
+        main_reg = MainRegistration.objects.filter(registration=signup, id=mosque_id).first()
+    else:
+        main_reg = MainRegistration.objects.filter(registration=signup).first()
+    mains = MainRegistration.objects.filter(registration=signup)
+    selected = mains.filter(id=mosque_id).first() if mosque_id else None
 
     if not main_reg:
         messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
@@ -200,7 +231,7 @@ def trusteesboard_view(request):
             trustees.registration = main_reg
             trustees.save()
             messages.success(request, "اطلاعات هیات امنا ذخیره شد ✅")
-            return redirect('/')
+            return redirect(f'/account/mainform/?mosque_id={main_reg.id}')
     else:
         data = TrusteesBoard.objects.filter(registration=main_reg).first()
         form = TrusteesBoard_form(instance=data)
@@ -211,5 +242,9 @@ def trusteesboard_view(request):
     return render(request, 'boardform.html', {
         'form': form,
         'signup': signup,
-        'editing': editing
+        'editing': editing,
+        'mosque_id': main_reg.id if main_reg else None,
+        'mosque_name': main_reg.mosque_name if main_reg else None,
+        'mains': mains,
+        'selected': selected,
     })

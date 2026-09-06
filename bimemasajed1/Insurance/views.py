@@ -11,68 +11,67 @@ from .services.coverage_calculator import CoverageCalculator
 from .services.base_calculator import BaseCalculator
 def get_all_data_for_signup(request):
     signup = get_signup_from_session(request)
-    try:
-        main = MainRegistration.objects.get(registration=signup)
-        
-        # تبدیل مدل به دیکشنری
-        main_dict = model_to_dict(main)
-        # حذف فیلدهای id و registration
-        main_dict.pop('id', None)
-        main_dict.pop('registration', None)
-        
-        # نگاشت به verbose_name
-        #main_verbose = [(main._meta.get_field(k).verbose_name, v) for k, v in main_dict.items()]
-        main_verbose = {main._meta.get_field(k).verbose_name: v for k, v in main_dict.items()}   
-
-        # مشابه برای مدل‌های وابسته
-        person_list = []
-        for p in main.persons.all():
-            d = model_to_dict(p)
-            d.pop('id', None)
-            d.pop('registration', None)
-
-            person_list.append({
-                p._meta.get_field(k).verbose_name: v
-                for k, v in d.items()
-            })
-            
-        
-        board_list = []
-        for b in main.TrusteesBoard.all():
-            d = model_to_dict(b)
-            d.pop('id', None)
-            d.pop('registration', None)
-
-            board_list.append({
-                b._meta.get_field(k).verbose_name: v
-                for k, v in d.items()
-            })
-
-        building_list = []
-        for b in main.building.all():
-            d = model_to_dict(b)
-            d.pop('id', None)
-            d.pop('registration', None)
-
-            building_list.append({
-                b._meta.get_field(k).verbose_name: v
-                for k, v in d.items()
-            })
-
-        return {
-            "data": {
-                "اطلاعات مسجد": main_verbose,
-                "اطلاعات خادمین": person_list,
-                "اطلاعات هیات امنا": board_list,
-                "اطلاعات ساختمان": building_list,
-            },
-            "objects": {
-                "main": main,
-                "buildings": main.building.all(),
-            }
-        }        
-    except MainRegistration.DoesNotExist:
+    main = MainRegistration.objects.filter(registration=signup).first()
+    if not main:
         return None
+
+    # تبدیل مدل به دیکشنری
+    main_dict = model_to_dict(main)
+    # حذف فیلدهای id و registration
+    main_dict.pop('id', None)
+    main_dict.pop('registration', None)
+
+    # نگاشت به verbose_name
+    #main_verbose = [(main._meta.get_field(k).verbose_name, v) for k, v in main_dict.items()]
+    main_verbose = {main._meta.get_field(k).verbose_name: v for k, v in main_dict.items()}
+
+    # مشابه برای مدل‌های وابسته
+    person_list = []
+    for p in main.persons.all():
+        d = model_to_dict(p)
+        d.pop('id', None)
+        d.pop('registration', None)
+
+        person_list.append({
+            p._meta.get_field(k).verbose_name: v
+            for k, v in d.items()
+        })
+
+    board_list = []
+    for b in main.TrusteesBoard.all():
+        d = model_to_dict(b)
+        d.pop('id', None)
+        d.pop('registration', None)
+
+        board_list.append({
+            b._meta.get_field(k).verbose_name: v
+            for k, v in d.items()
+        })
+
+    building_list = []
+    for b in main.building.all():
+        d = model_to_dict(b)
+        d.pop('id', None)
+        d.pop('registration', None)
+
+        building_list.append({
+            b._meta.get_field(k).verbose_name: v
+            for k, v in d.items()
+        })
+
+    return {
+        "data": {
+            "اطلاعات مسجد": main_verbose,
+            "اطلاعات خادمین": person_list,
+            "اطلاعات هیات امنا": board_list,
+            "اطلاعات ساختمان": building_list,
+        },
+        "objects": {
+            "main": main,
+            "buildings": main.building.all(),
+        }
+    }
+    
 def alldata_json(request):
     if request.method=='POST':
         signup = get_signup_from_session(request)
@@ -90,10 +89,9 @@ def alldata_json(request):
 
 def get_main_for_signup(request):
     signup = get_signup_from_session(request)
-    try:
-        return MainRegistration.objects.get(registration=signup)
-    except MainRegistration.DoesNotExist:
+    if not signup:
         return None
+    return MainRegistration.objects.filter(registration=signup).first()
     
 #def newinsurance_view(request):
     signup = get_signup_from_session(request)
@@ -118,8 +116,8 @@ def get_main_for_signup(request):
 
     base_price = BaseCalculator().calculate(building)
 
-    # ✅ خیلی مهم: اول coverage_instance
-    coverage_instance = Coverage.objects.filter(signup=signup).first()
+    # ✅ خیلی مهم: اول coverage_instance (use latest if multiple)
+    coverage_instance = Coverage.objects.filter(signup=signup).last()
 
     # آیا بیمه فعال یا صادر شده داریم؟
     active_insurance = Insurance.objects.filter(
@@ -149,17 +147,12 @@ def get_main_for_signup(request):
             coverage.signup = signup
             coverage.save()
 
-            # ساخت یا بروزرسانی Insurance
-            insurance, created = Insurance.objects.get_or_create(
+            # Create a new Insurance record for this coverage (allow multiple)
+            insurance = Insurance.objects.create(
                 signup=signup,
-                defaults={
-                    'coverage': coverage,
-                    'status': 'draft'
-                }
+                coverage=coverage,
+                status='draft'
             )
-            if not created:
-                insurance.coverage = coverage
-                insurance.save()
 
             messages.success(request, "اطلاعات با موفقیت ثبت شد")
             return redirect('/')
@@ -220,7 +213,7 @@ def newinsurance_view(request):
     building=main.building.first()
     base_price = BaseCalculator().calculate(building)
 
-    coverage_instance = Coverage.objects.filter(signup=signup).first()
+    coverage_instance = Coverage.objects.filter(signup=signup).last()
     detail, total = {}, 0
     if coverage_instance:
         calculator = CoverageCalculator(base_price, coverage_instance)
@@ -259,19 +252,14 @@ def newinsurance_view(request):
             coverage.signup = signup
             coverage.save()
 
-            insurance, created = Insurance.objects.get_or_create(
+            # create a new insurance record (do not overwrite previous ones)
+            insurance = Insurance.objects.create(
                 signup=signup,
-                defaults={
-                    'coverage': coverage,
-                    'status': 'draft'
-                }
+                coverage=coverage,
+                status='draft'
             )
-            if not created:
-                insurance.coverage = coverage
-                insurance.status = 'draft'
-                insurance.save()
-                messages.success(request, "پوشش‌ها با موفقیت ثبت شد")
-                return redirect('/')
+            messages.success(request, "پوشش‌ها با موفقیت ثبت شد")
+            return redirect('/')
     else:
         form = Coverage_Form(
             instance=coverage_instance,

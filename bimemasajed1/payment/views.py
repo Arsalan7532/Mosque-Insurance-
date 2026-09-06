@@ -10,11 +10,10 @@ def pay(request):
     if not main:
         messages.error(request, "ابتدا اطلاعات مسجد را وارد نمایید")
         return redirect('mainform')
-    try:
-        coverage=Coverage.objects.get(signup=main.registration)
-    except Coverage.DoesNotExist:
-        messages.error(request,"ابتدا پوشش های خود را انتخاب کنید")
-        return redirect("insurance")# url بررسی شوددددددددددددددد
+    coverage = Coverage.objects.filter(signup=main.registration).last()
+    if not coverage:
+        messages.error(request, "ابتدا پوشش های خود را انتخاب کنید")
+        return redirect("insurance")
     
     building = main.building.first()
     if not building:

@@ -33,20 +33,13 @@ class RequestQuoteAPIView(APIView):
         # 2. گرفتن signup از مسجد
         signup = mosque.registration
 
-        # 3. گرفتن coverage
-        try:
-            coverage = Coverage.objects.get(signup=signup)
-        except Coverage.DoesNotExist:
-            return Response(
-                {"error": "Coverage یافت نشد"},
-                status=404
-            )
+        # 3. گرفتن coverage (use latest coverage if multiple exist)
+        coverage = Coverage.objects.filter(signup=signup).last()
+        if not coverage:
+            return Response({"error": "Coverage یافت نشد"}, status=404)
 
-        # 4. ساخت یا گرفتن insurance
-        insurance, created = Insurance.objects.get_or_create(
-            signup=signup,
-            defaults={"status": "draft"}
-        )
+        # 4. ایجاد رکورد بیمه جدید برای این درخواست
+        insurance = Insurance.objects.create(signup=signup, coverage=coverage, status='draft')
 
         # 5. ساخت payload ساده (فعلاً بدون serializer)
         payload = {

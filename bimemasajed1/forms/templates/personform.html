@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title' %} اطلاعات خادمین{% endblock %}
+{% block title %} اطلاعات خادمین{% endblock %}
 {% block content %}
 <body class="bg-slate-100 min-h-screen flex items-center justify-center">
 
@@ -31,30 +31,70 @@
       </div>
     {% endif %}
 
+    {% if editing %}
+      <div class="mb-4 p-3 rounded bg-yellow-50 border border-yellow-200 text-yellow-800">
+        شما در حال ویرایش اطلاعات برای مسجد «{{ mosque_name|default:"-" }}» هستید
+      </div>
+    {% endif %}
+
+    {% if not selected %}
+      <div class="mb-6 flex justify-between items-center">
+        <div>
+          <a href="/account/mainform/" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600">مدیریت مساجد</a>
+        </div>
+      </div>
+
+      {% if mains %}
+        <div class="grid grid-cols-1 gap-4 mb-6">
+          {% for m in mains %}
+            <div class="p-3 border rounded-md flex justify-between items-center">
+              <div>
+                <div class="font-semibold">{{ m.mosque_name }}</div>
+                <div class="text-sm text-gray-600">کد: {{ m.mosque_id }} — ظرفیت: {{ m.mosque_Capacity }}</div>
+              </div>
+              <div class="flex items-center gap-3">
+                <a href="/account/personform/?mosque_id={{ m.id }}" class="bg-blue-500 text-white px-3 py-1 rounded">مشاهده اطلاعات خادمین</a>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endif %}
+
+    {% if selected or editing %}
     <form method="post" class="space-y-5">
       {% csrf_token %}
+      <input type="hidden" name="mosque_id" value="{{ mosque_id }}">
 
-{% for field in form %}
-  <div>
-    <label class="block text-gray-700 mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
-    {{ field }}
-    {% if field.errors %}
-      <p class="text-red-500 text-sm mt-1">{{ field.errors.0 }}</p>
-    {% endif %}
-  </div>
-{% endfor %}
+    {% for field in form %}
+      <div>
+        <label class="block text-gray-700 mb-1" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}
+          <p class="text-red-500 text-sm mt-1">{{ field.errors.0 }}</p>
+        {% endif %}
+      </div>
+    {% endfor %}
 
-<div class="pt-4 flex justify-between items-center">
-  {% if not editing %}
-    <a href="?edit=true" class="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all">
-      درخواست ویرایش اطلاعات
-    </a>
-  {% endif %}
-  <button type="submit" class="w-full {% if not editing %}hidden{% endif %} bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-all">
-    ثبت اطلاعات
-  </button>
+    <div class="pt-4 flex justify-between items-center">
+      {% if not editing %}
+        <a href="?mosque_id={{ mosque_id }}&edit=true" class="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all">
+          درخواست ویرایش اطلاعات
+        </a>
+      {% endif %}
+      <button type="submit" class="w-full {% if not editing %}hidden{% endif %} bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-all">
+        ثبت اطلاعات
+      </button>
     </div>
-  </form>
+    </form>
+    {% else %}
+      <div class="p-4 bg-yellow-50 border rounded-md text-gray-700">
+        برای مشاهده یا ویرایش اطلاعات، یک مسجد را از لیست انتخاب کنید یا یک مسجد جدید اضافه کنید.
+        <div class="mt-3">
+          <a href="/account/mainform/?new=true" class="bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600">افزودن مسجد جدید</a>
+        </div>
+      </div>
+    {% endif %}
 </div>
 
 </body>

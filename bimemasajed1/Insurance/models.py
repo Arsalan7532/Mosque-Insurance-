@@ -2,10 +2,11 @@ from django.db import models
 from forms.models import Signup
 
 class Coverage(models.Model):
-    signup = models.OneToOneField(
+    # allow multiple coverage records per signup (previously OneToOne)
+    signup = models.ForeignKey(
         Signup,
         on_delete=models.CASCADE,
-        related_name="coverage"
+        related_name="coverages"
     )
     vahanele_motori = models.BooleanField(default=False)  # حوادث ناشی از وسایل نقلیه موتوری
     hazine_pezezhki = models.BooleanField(default=False)  # جبران هزینه های پزشکی
