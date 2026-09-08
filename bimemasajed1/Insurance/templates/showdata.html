@@ -9,6 +9,31 @@
         بررسی و ثبت بیمه‌نامه مسجد
     </h1>
 
+    {% if mains %}
+      <div class="bg-white rounded-2xl shadow-md p-4">
+        <div class="flex flex-wrap gap-3">
+          {% for m in mains %}
+            <a href="?mosque_id={{ m.id }}"
+               class="px-3 py-2 rounded-lg text-sm {% if selected and selected.id == m.id %}bg-indigo-600 text-white{% else %}bg-indigo-50 text-indigo-700{% endif %}">
+              {{ m.mosque_name }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    {% if selected %}
+      <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-3 text-sm">
+        شما در حال ویرایش اطلاعات برای مسجد «{{ selected.mosque_name }}» هستید
+      </div>
+    {% endif %}
+
+    {% if endorsement_mode %}
+      <div class="bg-orange-100 border border-orange-300 text-orange-800 rounded-xl p-4 text-sm">
+        بدلیل داشتن بیمه نامه فعال شما مجاز به تغییر اطلاعات خود نیستید مگر آن که درخواست الحاقیه کنید
+      </div>
+    {% endif %}
+
 <!-- =========================
     اطلاعات مسجد
     ========================= -->
@@ -105,6 +130,8 @@
 
     <form method="POST">
         {% csrf_token %}
+        {{ form.signup }}
+        {{ form.mosque }}
         <div class="space-y-4">
         {% for field in form %}
             {% if field.field.widget.input_type == "checkbox" %}
@@ -168,12 +195,20 @@
                 </button>
             </div>
         {% endif %}
+
+        {% if endorsement_mode %}
+            <div class="text-center mt-6">
+                <button type="button" id="endorsement-calc" class="px-8 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+                    محاسبه الحاقیه
+                </button>
+            </div>
+        {% endif %}
 </section>
 
-{% if is_endorsement %}
+{% if is_endorsement and not endorsement_mode %}
     <div class="text-center mt-6">
         <a
-            href="{% url 'request_endorsement' %}"
+            href="{% url 'request_endorsement' %}?mosque_id={{ selected.id }}"
             class="px-8 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 inline-block">
             درخواست الحاقیه
         </a>
@@ -185,6 +220,7 @@
 ========================= -->
 <script>
     const IS_ENDORSEMENT = {{ is_endorsement|yesno:"true,false" }};
+    const ENDORSEMENT_MODE = {{ endorsement_mode|yesno:"true,false" }};
     const BASE_PRICE = {{ base_price }};
     const RATES = {{ rates|safe }};
 
@@ -220,6 +256,16 @@
     }
 
     document.getElementById('base-price').textContent = formatPrice(BASE_PRICE);
+
+    const endorseButton = document.getElementById('endorsement-calc');
+    if (endorseButton) {
+        endorseButton.addEventListener('click', () => {
+            let total = BASE_PRICE;
+            Object.values(coverageState).forEach(v => total += v);
+            document.getElementById('total-price').textContent = formatPrice(total);
+            document.getElementById('base-price').textContent = formatPrice(BASE_PRICE);
+        });
+    }
 
     if (IS_ENDORSEMENT) {
         document.getElementById('total-price').textContent = formatPrice(BASE_PRICE);

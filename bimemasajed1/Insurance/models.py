@@ -1,5 +1,6 @@
 from django.db import models
-from forms.models import Signup
+from django.utils import timezone
+from forms.models import Signup, MainRegistration
 
 class Coverage(models.Model):
     # allow multiple coverage records per signup (previously OneToOne)
@@ -7,6 +8,14 @@ class Coverage(models.Model):
         Signup,
         on_delete=models.CASCADE,
         related_name="coverages"
+    )
+    mosque = models.ForeignKey(
+        MainRegistration,
+        on_delete=models.CASCADE,
+        related_name="coverages",
+        null=True,
+        blank=True,
+        verbose_name="مسجد"
     )
     vahanele_motori = models.BooleanField(default=False)  # حوادث ناشی از وسایل نقلیه موتوری
     hazine_pezezhki = models.BooleanField(default=False)  # جبران هزینه های پزشکی
@@ -50,16 +59,14 @@ class Insurance(models.Model):
     signup = models.ForeignKey(Signup, on_delete=models.CASCADE)
     coverage = models.ForeignKey(Coverage, on_delete=models.CASCADE)
     premium_quote = models.PositiveIntegerField(null=True, blank=True)  # مبلغ نهایی که در درگاه پرداخت شده
+    # فقط وضعیت‌های واقعی معامله حفظ می‌شوند.
+    # در آینده، بعد از اتصال درگاه پرداخت، وضعیت‌ها به payment_completed و سپس issued تغییر می‌کنند.
     STATUS_CHOICES = [
-        ('quote_requested', 'درخواست نرخ'),
-        ('quote_received', 'نرخ دریافت شد'),
-        ('payment_pending', 'منتظر پرداخت'),
         ('payment_completed', 'پرداخت شد'),
         ('issued', 'صادر شده'),
-        ('draft', 'پیش‌نویس'),
-        ('failed', 'ناموفق'),
+        ('failed', 'صادر نشد'),
     ]
-    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='draft')
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='payment_completed')
     
     policy_image = models.ImageField(
     upload_to='insurance_policies/',  # پوشه ذخیره
@@ -71,6 +78,30 @@ class Insurance(models.Model):
     
     quote_received_at = models.DateTimeField(null=True, blank=True)
     payment_date = models.DateTimeField(null=True, blank=True)
+    issued_at = models.DateTimeField(null=True, blank=True)
+    valid_until = models.DateTimeField(null=True, blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.status in ['issued', 'payment_completed'] and not self.issued_at:
+            self.issued_at = timezone.now()
+        if self.status in ['issued', 'payment_completed'] and self.issued_at and not self.valid_until:
+            self.valid_until = self.issued_at + timezone.timedelta(days=365)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_within_lock_period(self):
+        if self.status not in ['issued', 'payment_completed']:
+            return False
+        if not self.issued_at:
+            return False
+        return timezone.now() < self.issued_at + timezone.timedelta(days=365)
+
+    @property
+    def remaining_days(self):
+        if not self.issued_at:
+            return None
+        remaining = self.issued_at + timezone.timedelta(days=365) - timezone.now()
+        return max(0, remaining.days)

@@ -4,4 +4,5 @@ urlpatterns=[
     path('',views.newinsurance_view,name='insurance'),
     path ('alldata/',views.alldata_json,name='alldata'),
     path ('myinsurance/',views.myinsurance,name='myinsurance'),
+    path('request-endorsement/', views.request_endorsement, name='request_endorsement'),
 ]

@@ -1,9 +1,24 @@
+from datetime import timedelta
 from django.shortcuts import render,redirect
 from django.contrib import messages
+from django.utils import timezone
 from .forms import SignupForm,LoginForm,MainRegistration_form,PersonInfo_form,BuildingInformation_form,TrusteesBoard_form
 from .models import Signup,TrusteesBoard,MainRegistration,PersonInfo,BuildingInformation
 from django.contrib.auth.hashers import check_password,make_password
+from Insurance.models import Insurance
 from bimemasajed1.decorators import custom_login_required
+
+
+def mosque_has_active_policy(signup, mosque):
+    if not signup or not mosque:
+        return False
+    return Insurance.objects.filter(
+        signup=signup,
+        coverage__mosque=mosque,
+        status__in=['issued', 'payment_completed'],
+    ).exclude(issued_at__isnull=True).filter(
+        issued_at__gte=timezone.now() - timedelta(days=365)
+    ).exists()
 def signin(request):
     if request.session.get('is_logged_in', False):
         return redirect('home')  # هدایت به صفحه اصلی اگر کاربر لاگین کرده باشد
@@ -89,9 +104,17 @@ def MainRegistration_view(request):
     if mosque_id:
         selected = mains.filter(id=mosque_id).first()
 
-    # آیا کاربر در حالت ویرایش است؟ (با ?edit=true در URL) یا وقتی می‌خواهد مسجد جدید اضافه کند (?new=true)
-    editing = request.GET.get("edit") == "true" or request.GET.get('new') == 'true'
+    # حالت مشاهده: همواره مجاز است
+    # حالت ویرایش: فقط زمانی که کاربر صریحاً درخواست ویرایش می‌کند، نه در حالت مشاهده عادی
+    editing = request.GET.get("edit") == "true"
     is_new = request.GET.get('new') == 'true'
+
+    if selected and mosque_has_active_policy(signup, selected) and editing and not request.GET.get('endorsement') == 'true':
+        messages.warning(
+            request,
+            "بدلیل داشتن بیمه نامه فعال شما مجاز به تغییر اطلاعات خود نیستید مگر آن که درخواست الحاقیه کنید."
+        )
+        return redirect(f'/insurance/request-endorsement/?mosque_id={selected.id}')
 
     if request.method == 'POST':
         # هنگام POST، اگر یک مسجد انتخاب شده باشد از آن برای instance استفاده کن
@@ -138,6 +161,13 @@ def PersonInfo_view(request):
 
     editing = request.GET.get("edit") == "true"
 
+    if selected and mosque_has_active_policy(signup, selected) and request.GET.get('edit') == 'true' and not request.GET.get('endorsement') == 'true':
+        messages.warning(
+            request,
+            "بدلیل داشتن بیمه نامه فعال شما مجاز به تغییر اطلاعات خود نیستید مگر آن که درخواست الحاقیه کنید."
+        )
+        return redirect(f'/insurance/request-endorsement/?mosque_id={selected.id}')
+
     if request.method == 'POST':
         data = PersonInfo.objects.filter(registration=main_reg).first()
         form = PersonInfo_form(request.POST, instance=data)
@@ -179,6 +209,13 @@ def BuildingInformation_view(request):
         return redirect('/account/mainform/')  # مسیر فرم مسجد
 
     editing = request.GET.get("edit") == "true"
+
+    if selected and mosque_has_active_policy(signup, selected) and request.GET.get('edit') == 'true' and not request.GET.get('endorsement') == 'true':
+        messages.warning(
+            request,
+            "بدلیل داشتن بیمه نامه فعال شما مجاز به تغییر اطلاعات خود نیستید مگر آن که درخواست الحاقیه کنید."
+        )
+        return redirect(f'/insurance/request-endorsement/?mosque_id={selected.id}')
 
     if request.method == 'POST':
         data = BuildingInformation.objects.filter(registration=main_reg).first()
@@ -222,6 +259,13 @@ def trusteesboard_view(request):
         return redirect('/account/mainform/')  # مسیر فرم مسجد
 
     editing = request.GET.get("edit") == "true"
+
+    if selected and mosque_has_active_policy(signup, selected) and request.GET.get('edit') == 'true' and not request.GET.get('endorsement') == 'true':
+        messages.warning(
+            request,
+            "بدلیل داشتن بیمه نامه فعال شما مجاز به تغییر اطلاعات خود نیستید مگر آن که درخواست الحاقیه کنید."
+        )
+        return redirect(f'/insurance/request-endorsement/?mosque_id={selected.id}')
 
     if request.method == 'POST':
         data = TrusteesBoard.objects.filter(registration=main_reg).first()

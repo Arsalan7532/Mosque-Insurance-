@@ -78,9 +78,9 @@
 
     <div class="pt-4 flex justify-between items-center">
       {% if not editing %}
-        <a href="?mosque_id={{ mosque_id }}&edit=true" class="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all">
-          درخواست ویرایش اطلاعات
-        </a>
+        <button type="button" class="open-endorsement-modal bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all" data-mosque-id="{{ mosque_id }}">
+          درخواست تغییر اطلاعات
+        </button>
       {% endif %}
       <button type="submit" class="w-full {% if not editing %}hidden{% endif %} bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-all">
         ثبت اطلاعات
@@ -96,6 +96,51 @@
       </div>
     {% endif %}
 </div>
+
+<div id="endorsement-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-40">
+  <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 text-center">
+    <h3 class="text-xl font-bold text-gray-800 mb-3">درخواست الحاقیه</h3>
+    <p class="text-gray-700 leading-7 mb-6">
+      اگر می‌خواهید اطلاعات مسجد را تغییر دهید، روی «درخواست الحاقیه» کلیک کنید.
+    </p>
+    <div class="flex justify-center gap-3">
+      <button id="confirm-endorsement" class="bg-orange-500 text-white px-5 py-2 rounded-lg hover:bg-orange-600">درخواست الحاقیه</button>
+      <button id="cancel-endorsement" class="bg-gray-200 text-gray-700 px-5 py-2 rounded-lg hover:bg-gray-300">انصراف</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const modal = document.getElementById('endorsement-modal');
+  const confirmBtn = document.getElementById('confirm-endorsement');
+  const cancelBtn = document.getElementById('cancel-endorsement');
+  let activeMosqueId = null;
+
+  document.querySelectorAll('.open-endorsement-modal').forEach((btn) => {
+    btn.addEventListener('click', function () {
+      activeMosqueId = this.dataset.mosqueId;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    });
+  });
+
+  cancelBtn.addEventListener('click', function () {
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    activeMosqueId = null;
+  });
+
+  confirmBtn.addEventListener('click', function () {
+    if (!activeMosqueId) return;
+    fetch(`/insurance/request-endorsement/?mosque_id=${activeMosqueId}`)
+      .then(() => {
+        window.location.href = `/insurance/?mosque_id=${activeMosqueId}&endorsement=true`;
+      })
+      .catch(() => {
+        window.location.href = `/insurance/request-endorsement/?mosque_id=${activeMosqueId}`;
+      });
+  });
+</script>
 
 </body>
 {% endblock %}
