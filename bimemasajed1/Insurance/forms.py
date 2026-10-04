@@ -52,4 +52,5 @@ class Coverage_Form(forms.ModelForm):
         if is_endorsement:
             for field_name, field in self.fields.items():
                 if isinstance(field.widget, forms.CheckboxInput):
-                    field.widget.attrs['disabled'] = 'disabled'
+                    if getattr(self.instance, field_name, False):
+                        field.widget.attrs['disabled'] = 'disabled'

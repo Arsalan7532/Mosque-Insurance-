@@ -3,9 +3,6 @@ class BaseCalculator:
     محاسبه حق بیمه پایه
     """
     def calculate(self,building):
-        if not building:
-            return 1000000
-
         area = building.total_bulding_area
         if not area or area <= 0:
             return 1000000  # مقدار پیش‌فرض برای مساحت نامعتبر

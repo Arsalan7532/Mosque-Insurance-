@@ -78,9 +78,15 @@
 
     <div class="pt-4 flex justify-between items-center">
       {% if not editing %}
-        <button type="button" class="open-endorsement-modal bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all" data-mosque-id="{{ mosque_id }}">
-          درخواست تغییر اطلاعات
-        </button>
+        {% if has_active_policy %}
+          <button type="button" class="open-endorsement-modal bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all" data-mosque-id="{{ mosque_id }}">
+            درخواست تغییر اطلاعات
+          </button>
+        {% else %}
+          <a href="?mosque_id={{ mosque_id }}&edit=true" class="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-all">
+            درخواست تغییر اطلاعات
+          </a>
+        {% endif %}
       {% endif %}
       <button type="submit" class="w-full {% if not editing %}hidden{% endif %} bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition-all">
         ثبت اطلاعات

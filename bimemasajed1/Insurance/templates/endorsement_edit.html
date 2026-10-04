@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}الحاقیه مسجد{% endblock %}
+{% block content %}
+
+<div class="max-w-6xl mx-auto p-6 space-y-8">
+  <h1 class="text-2xl font-bold text-center text-indigo-700">درخواست الحاقیه</h1>
+
+  {% if selected %}
+    <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-xl p-3 text-sm">
+      شما در حال ویرایش اطلاعات برای مسجد «{{ selected.mosque_name }}» هستید
+    </div>
+  {% endif %}
+
+  <div class="bg-white rounded-2xl shadow-lg p-6">
+    <h2 class="text-2xl font-bold text-indigo-700 mb-6">اطلاعات مسجد</h2>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="space-y-8">
+        {% for section_title, section_data in data.data.items %}
+          {% if section_data.items and not section_data.0 %}
+            <div class="border rounded-xl p-4">
+              <h3 class="text-lg font-semibold text-gray-800 mb-4">{{ section_title }}</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for key, value in section_data.items %}
+                  <div>
+                    <label class="block text-sm text-gray-600 mb-1">{{ key }}</label>
+                    {% if value and value.year %}
+                      <input type="date" class="w-full border rounded-lg px-3 py-2" value="{{ value|date:'Y-m-d' }}" />
+                    {% else %}
+                      <input type="text" class="w-full border rounded-lg px-3 py-2" value="{{ value|default:'' }}" />
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <div class="mt-8 border-t pt-6">
+        <h2 class="text-2xl font-bold text-indigo-700 mb-4">پوشش‌های بیمه</h2>
+
+        <div class="space-y-3">
+          {% for field in form %}
+            {% if field.field.widget.input_type == "checkbox" %}
+              <div class="flex items-center justify-between border rounded-lg p-3">
+                <div class="flex items-center gap-3">
+                  {% if field.value %}
+                    <input type="checkbox" name="{{ field.name }}" checked disabled class="cursor-not-allowed opacity-60">
+                  {% else %}
+                    {{ field }}
+                  {% endif %}
+                  <label for="{{ field.id_for_label }}" class="text-gray-700">{{ field.label }}</label>
+                </div>
+                <span class="price text-sm font-medium text-green-600" data-name="{{ field.name }}">۰ تومان</span>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="mt-8 p-4 bg-gray-50 rounded-lg border-r-4 border-green-500 space-y-2">
+        <div class="flex justify-between">
+          <span class="text-gray-700">حق بیمه پایه</span>
+          <span id="base-price" class="font-medium">{{ base_price|intcomma }}</span>
+        </div>
+        <div class="flex justify-between text-lg font-bold">
+          <span>مبلغ نهایی</span>
+          <span id="total-price" class="text-green-700">{{ final_total|intcomma }}</span>
+        </div>
+      </div>
+
+      <div class="mt-8 flex justify-center gap-3">
+        <button type="button" id="endorsement-calc" class="px-8 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600">
+          محاسبه الحاقیه
+        </button>
+        <button type="submit" id="endorsement-submit" class="hidden px-8 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+          ثبت و پرداخت الحاقیه
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const BASE_PRICE = {{ base_price }};
+  const RATES = {{ rates|safe }};
+  const coverageState = {};
+
+  function formatPrice(n) {
+    return new Intl.NumberFormat('fa-IR').format(n) + ' تومان';
+  }
+
+  function getCoveragePrice(name) {
+    if (RATES[name]) return Math.round(BASE_PRICE * RATES[name]);
+    return 0;
+  }
+
+  function updateCoverage(name) {
+    const checkbox = document.querySelector(`input[name="${name}"]`);
+    const priceEl = document.querySelector(`.price[data-name="${name}"]`);
+    if (!checkbox || !priceEl) return;
+    const price = getCoveragePrice(name);
+    priceEl.textContent = formatPrice(price);
+    priceEl.style.opacity = checkbox.checked ? '1' : '0.4';
+    coverageState[name] = checkbox.checked ? price : 0;
+    updateTotal();
+  }
+
+  function updateTotal() {
+    let total = BASE_PRICE;
+    Object.values(coverageState).forEach(value => total += value);
+    document.getElementById('total-price').textContent = formatPrice(total);
+  }
+
+  document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    if (cb.disabled) return;
+    cb.addEventListener('change', () => updateCoverage(cb.name));
+    updateCoverage(cb.name);
+  });
+
+  document.getElementById('endorsement-calc').addEventListener('click', () => {
+    document.getElementById('endorsement-submit').classList.remove('hidden');
+    updateTotal();
+  });
+</script>
+
+{% endblock %}

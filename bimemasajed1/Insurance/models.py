@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from forms.models import Signup, MainRegistration
+import jalali_utils
 
 class Coverage(models.Model):
     # allow multiple coverage records per signup (previously OneToOne)
@@ -105,3 +106,11 @@ class Insurance(models.Model):
             return None
         remaining = self.issued_at + timezone.timedelta(days=365) - timezone.now()
         return max(0, remaining.days)
+
+    @property
+    def issued_at_jalali(self):
+        return jalali_utils.to_jalali_date(self.issued_at)
+
+    @property
+    def valid_until_jalali(self):
+        return jalali_utils.to_jalali_date(self.valid_until)

@@ -9,7 +9,7 @@ from forms.models import MainRegistration, question
 from .models import Coverage,Insurance
 from .forms import Coverage_Form
 from forms.views import get_signup_from_session 
-from .services.coverage_calculator import CoverageCalculator
+import jalali_utils
 from .services.base_calculator import BaseCalculator
 
 INSURANCE_LOCK_DAYS = 365
@@ -108,107 +108,7 @@ def get_main_for_signup(request):
     if not signup:
         return None
     return MainRegistration.objects.filter(registration=signup).first()
-    
-#def newinsurance_view(request):
-    signup = get_signup_from_session(request)
-    if not signup:
-        messages.error(request, "ابتدا وارد شوید!")
-        return redirect('login')
 
-    data = get_all_data_for_signup(request)
-    if not data:
-        messages.error(request, "ابتدا اطلاعات مسجد را تکمیل کنید")
-        return redirect('mainform')
-
-    main = get_main_for_signup(request)
-    if not main:
-        messages.error(request, "اطلاعات مسجد ناقص است")
-        return redirect('mainform')
-
-    building = main.building.first()
-    if not building:
-        messages.error(request, "اطلاعات ساختمان تکمیل نشده")
-        return redirect('buildform')
-
-    base_price = BaseCalculator().calculate(building)
-
-    # ✅ خیلی مهم: اول coverage_instance (use latest if multiple)
-    coverage_instance = Coverage.objects.filter(signup=signup).last()
-
-    # آیا بیمه فعال یا صادر شده داریم؟
-    active_insurance = Insurance.objects.filter(
-        signup=signup,
-        status__in=['active', 'issued']
-    ).exists()
-
-    # محاسبه پوشش‌ها (فقط اگر قبلاً انتخاب شده باشند)
-    detail, total = {}, 0
-    if coverage_instance:
-        calculator = CoverageCalculator(base_price, coverage_instance)
-        detail, total = calculator.calculate()
-
-    # -------------------------
-    # POST
-    # -------------------------
-    if request.method == 'POST':
-        form = Coverage_Form(
-            request.POST,
-            instance=coverage_instance,
-            signup=signup,
-            is_endorsement=active_insurance
-        )
-
-        if form.is_valid():
-            coverage = form.save(commit=False)
-            coverage.signup = signup
-            coverage.save()
-
-            # Create a new Insurance record for this coverage (allow multiple)
-            insurance = Insurance.objects.create(
-                signup=signup,
-                coverage=coverage,
-                status='draft'
-            )
-
-            messages.success(request, "اطلاعات با موفقیت ثبت شد")
-            return redirect('/')
-
-    # -------------------------
-    # GET
-    # -------------------------
-    else:
-        form = Coverage_Form(
-            instance=coverage_instance,
-            signup=signup,
-            is_endorsement=active_insurance
-        )
-    rates = {
-        'vahanele_motori': 0.05,  # 5%
-        'hazine_pezezhki': 0.07,  # 7%
-        'jange_az_sanavi': 0.03,  # 3%
-        'masouliat_ashkhas_sevom': 0.06,  # 6%
-        'tedad_diyat': 0.04,  # 4%
-        'masouliat_mojri': 0.02,  # 2%
-        'tabareh_66': 0.001,  # 0.1%
-        'mamooriat_kharej': 0.0012,  # 0.12%
-        'gharamat_roozane': 0.002,  # 0.2%
-        'hazine_kargoshay': 0.0015,  # 0.15%
-        'die_increase_multipliers': {
-            '1': 0.03,  # حداکثر یکسال
-            '2': 0.05,  # حداکثر دو سال
-            '3': 0.08,  # حداکثر سه سال
-        }
-    }
-    return render(request, 'showdata.html', {
-        'data': data,
-        'form': form,
-        'coverage_instance': coverage_instance,
-        'detail': detail,
-        'total': total,
-        'base_price': base_price,
-        'rate': rates,
-        'is_endorsement': active_insurance,
-    })
 
 def newinsurance_view(request):
     signup = get_signup_from_session(request)
@@ -235,13 +135,11 @@ def newinsurance_view(request):
         messages.error(request, "اطلاعات ساختمان مسجد انتخاب‌شده تکمیل نشده است")
         return redirect(f'/account/buildform/?mosque_id={selected.id}')
 
-    base_price = BaseCalculator().calculate(building)
+    # قیمت پایه به‌صورت سرویس جدا محاسبه می‌شود.
+    # در حالت endorsement فقط باید صفر شود.
+    base_price = 0 if endorsement_mode else BaseCalculator().calculate(building)
 
     coverage_instance = Coverage.objects.filter(signup=signup, mosque=selected).last()
-    detail, total = {}, 0
-    if coverage_instance:
-        calculator = CoverageCalculator(base_price, coverage_instance)
-        detail, total = calculator.calculate()
 
     active_policy, policy_lock_active, policy_lock_until = get_mosque_policy_lock(signup, selected)
     active_insurance = bool(active_policy)
@@ -251,11 +149,14 @@ def newinsurance_view(request):
             active_policy.valid_until = active_policy.issued_at + timedelta(days=INSURANCE_LOCK_DAYS)
             active_policy.save(update_fields=['valid_until'])
 
+    # منطق قفل‌شدگی: اگر بیمه فعال است و endorsement_mode = false، قفل کن
+    form_is_locked = active_insurance and not endorsement_mode
+
     if request.method == 'POST':
         if policy_lock_active and not endorsement_mode:
             messages.warning(
                 request,
-                "بیمه این مسجد در بازه 365 روزه فعال است؛ تا پایان این مدت فقط الحاقیه مجاز است و انتخاب پوشش جدید ممنوع است."
+                "بیمه این مسجد در بازه 365 روزه فعال است؛ تا پایان این مدت فقط الحاقیه مجاز است ."
             )
             return redirect(f'/insurance/?mosque_id={selected.id}')
 
@@ -275,16 +176,28 @@ def newinsurance_view(request):
             instance=coverage_instance,
             signup=signup,
             mosque=selected,
-            is_endorsement=active_insurance
+            is_endorsement=form_is_locked
         )
         if form.is_valid():
             coverage = form.save(commit=False)
             coverage.signup = signup
             coverage.mosque = selected
+            coverage.pk = None
             coverage.save()
 
-            # TODO: بعد از اتصال درگاه پرداخت، این بخش باید فقط پس از موفقیت پرداخت اجرا شود.
-            # برای تست فعلی، روی کلیک ثبت بیمه‌نامه، بیمه واقعاً صادر می‌شود و قفل 365 روزه شروع می‌شود.
+            if endorsement_mode:
+                issued_at = timezone.now()
+                Insurance.objects.create(
+                    signup=signup,
+                    coverage=coverage,
+                    status='payment_completed',
+                    issued_at=issued_at,
+                    valid_until=issued_at + timedelta(days=365),
+                    premium_quote=None,
+                )
+                messages.success(request, "الحاقیه با موفقیت ثبت و برای پرداخت آماده شد")
+                return redirect(f'/insurance/?mosque_id={selected.id}&endorsement=true')
+
             issued_at = timezone.now()
             Insurance.objects.create(
                 signup=signup,
@@ -294,77 +207,47 @@ def newinsurance_view(request):
                 valid_until=issued_at + timedelta(days=365),
             )
             messages.success(request, "بیمه نامه با موفقیت در صف صدور وارد گردید")
-            return render(request, 'showdata.html', {
-                'data': data,
-                'form': form,
-                'coverage_instance': coverage,
-                'is_endorsement': True,
-                'detail': detail,
-                'final_total': total,
-                'base_price': base_price if base_price > 0 else 1000000,
-                'rates': {
-                    'vahanele_motori': 0.05,
-                    'hazine_pezezhki': 0.07,
-                    'jange_az_sanavi': 0.03,
-                    'masouliat_ashkhas_sevom': 0.06,
-                    'tedad_diyat': 0.04,
-                    'masouliat_mojri': 0.02,
-                    'tabareh_66': 0.001,
-                    'mamooriat_kharej': 0.0012,
-                    'gharamat_roozane': 0.002,
-                    'hazine_kargoshay': 0.0015,
-                    'die_increase_multipliers': {'1': 0.03, '2': 0.05, '3': 0.08},
-                },
-                'mains': mains,
-                'selected': selected,
-                'mosque_name': selected.mosque_name,
-                'mosque_id': selected.id,
-                'policy_lock_active': True,
-                'policy_lock_until': issued_at + timedelta(days=365),
-                'active_policy': True,
-            })
+            return redirect(f'/insurance/?mosque_id={selected.id}')
     else:
         form = Coverage_Form(
             instance=coverage_instance,
             signup=signup,
             mosque=selected,
-            is_endorsement=active_insurance
+            is_endorsement=form_is_locked
         )
 
-    rates = {
-        'vahanele_motori': 0.05,
-        'hazine_pezezhki': 0.07,
-        'jange_az_sanavi': 0.03,
-        'masouliat_ashkhas_sevom': 0.06,
-        'tedad_diyat': 0.04,
-        'masouliat_mojri': 0.02,
-        'tabareh_66': 0.001,
-        'mamooriat_kharej': 0.0012,
-        'gharamat_roozane': 0.002,
-        'hazine_kargoshay': 0.0015,
-        'die_increase_multipliers': {
-            '1': 0.03,
-            '2': 0.05,
-            '3': 0.08,
-        }
-    }
+    if endorsement_mode:
+        return render(request, 'endorsement_edit.html', {
+            'data': data,
+            'form': form,
+            'coverage_instance': coverage_instance,
+            'is_endorsement': active_insurance,
+            'endorsement_mode': True,
+            'base_price': 0,
+            'mains': mains,
+            'selected': selected,
+            'mosque_name': selected.mosque_name,
+            'mosque_id': selected.id,
+            'policy_lock_active': policy_lock_active,
+            'policy_lock_until': policy_lock_until,
+            'policy_lock_until_jalali': jalali_utils.to_jalali_date(policy_lock_until) if policy_lock_until else None,
+            'active_policy': active_policy,
+        })
 
     return render(request, 'showdata.html', {
         'data': data,
         'form': form,
         'coverage_instance': coverage_instance,
-        'is_endorsement': (active_insurance or policy_lock_active) and not endorsement_mode,
+        'is_endorsement': form_is_locked,
         'endorsement_mode': endorsement_mode,
-        'detail': detail,
-        'final_total': total,
-        'base_price': base_price if base_price > 0 else 1000000,
-        'rates': rates,
+        'base_price': base_price,
         'mains': mains,
         'selected': selected,
         'mosque_name': selected.mosque_name,
         'mosque_id': selected.id,
         'policy_lock_active': policy_lock_active,
         'policy_lock_until': policy_lock_until,
+        'policy_lock_until_jalali': jalali_utils.to_jalali_date(policy_lock_until) if policy_lock_until else None,
         'active_policy': active_policy,
     })
 
@@ -385,10 +268,6 @@ def request_endorsement(request):
         return redirect('mainform')
 
     request.session['endorsement_mosque_id'] = selected.id
-    messages.warning(
-        request,
-        'بدلیل داشتن بیمه نامه فعال شما مجاز به تغییر اطلاعات خود نیستید مگر آن که درخواست الحاقیه کنید.'
-    )
     return redirect(f'/insurance/?mosque_id={selected.id}&endorsement=true')
 
 
@@ -414,12 +293,22 @@ def myinsurance(request):
             locked = timezone.now() < lock_until
             remaining_days = max(0, (lock_until - timezone.now()).days)
 
+        # jalali representations for templates
+        issued_at_jalali = None
+        lock_until_jalali = None
+        if insurance.issued_at:
+            issued_at_jalali = jalali_utils.to_jalali_date(insurance.issued_at)
+        if lock_until:
+            lock_until_jalali = jalali_utils.to_jalali_date(lock_until)
+
         rows.append({
             'insurance': insurance,
             'mosque': mosque,
             'lock_until': lock_until,
             'locked': locked,
             'remaining_days': remaining_days,
+            'issued_at_jalali': issued_at_jalali,
+            'lock_until_jalali': lock_until_jalali,
             'status_label': dict(Insurance.STATUS_CHOICES).get(insurance.status, insurance.status),
             'is_issued': insurance.status in ['issued', 'payment_completed'],
         })

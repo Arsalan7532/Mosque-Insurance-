@@ -104,6 +104,8 @@ def MainRegistration_view(request):
     if mosque_id:
         selected = mains.filter(id=mosque_id).first()
 
+    has_active_policy = bool(selected and mosque_has_active_policy(signup, selected))
+
     # حالت مشاهده: همواره مجاز است
     # حالت ویرایش: فقط زمانی که کاربر صریحاً درخواست ویرایش می‌کند، نه در حالت مشاهده عادی
     editing = request.GET.get("edit") == "true"
@@ -140,6 +142,7 @@ def MainRegistration_view(request):
         'mains': mains,
         'selected': selected,
         'is_new': is_new,
+        'has_active_policy': has_active_policy,
     })
 @custom_login_required
 def PersonInfo_view(request):
@@ -154,6 +157,7 @@ def PersonInfo_view(request):
     # لیست تمام مساجد کاربر برای نمایش در سربرگ
     mains = MainRegistration.objects.filter(registration=signup)
     selected = mains.filter(id=mosque_id).first() if mosque_id else None
+    has_active_policy = bool(selected and mosque_has_active_policy(signup, selected))
 
     if not main_reg:
         messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
@@ -192,6 +196,7 @@ def PersonInfo_view(request):
         'mosque_name': main_reg.mosque_name if main_reg else None,
         'mains': mains,
         'selected': selected,
+        'has_active_policy': has_active_policy,
     })
 @custom_login_required
 def BuildingInformation_view(request):
@@ -203,6 +208,7 @@ def BuildingInformation_view(request):
         main_reg = MainRegistration.objects.filter(registration=signup).first()
     mains = MainRegistration.objects.filter(registration=signup)
     selected = mains.filter(id=mosque_id).first() if mosque_id else None
+    has_active_policy = bool(selected and mosque_has_active_policy(signup, selected))
 
     if not main_reg:
         messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
@@ -241,6 +247,7 @@ def BuildingInformation_view(request):
         'mosque_name': main_reg.mosque_name if main_reg else None,
         'mains': mains,
         'selected': selected,
+        'has_active_policy': has_active_policy,
     })
 
 @custom_login_required
@@ -253,7 +260,7 @@ def trusteesboard_view(request):
         main_reg = MainRegistration.objects.filter(registration=signup).first()
     mains = MainRegistration.objects.filter(registration=signup)
     selected = mains.filter(id=mosque_id).first() if mosque_id else None
-
+    has_active_policy = bool(selected and mosque_has_active_policy(signup, selected))
     if not main_reg:
         messages.error(request, "ابتدا فرم اطلاعات اصلی مسجد را تکمیل کنید.")
         return redirect('/account/mainform/')  # مسیر فرم مسجد
@@ -291,4 +298,5 @@ def trusteesboard_view(request):
         'mosque_name': main_reg.mosque_name if main_reg else None,
         'mains': mains,
         'selected': selected,
+        'has_active_policy': has_active_policy,
     })
